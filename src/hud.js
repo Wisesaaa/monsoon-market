@@ -164,9 +164,9 @@ export function createHud(minimapData, callbacks) {
       const px = (x) => ((x - minX) / (maxX - minX)) * W;
       const pz = (z) => ((z - minZ) / (maxZ - minZ)) * H;
       c.clearRect(0, 0, W, H);
-      c.fillStyle = 'rgba(10, 12, 24, 0.85)';
+      c.fillStyle = 'rgba(38, 46, 78, 0.94)';
       c.fillRect(0, 0, W, H);
-      c.fillStyle = '#3b2d33';
+      c.fillStyle = '#7d6a7a';
       for (const [x1, z1, x2, z2] of blocks) c.fillRect(px(x1), pz(z1), px(x2) - px(x1), pz(z2) - pz(z1));
       c.font = 'bold 11px system-ui, sans-serif';
       c.textAlign = 'center';

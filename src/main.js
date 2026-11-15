@@ -286,7 +286,7 @@ const rounds = createRounds(G, {
     const spawn = player.team === 'attack' ? map.spawns.attack[2] : map.spawns.defend[2];
     player.body.position.set(spawn[0], 0, spawn[1]);
     player.body.velocity.set(0, 0, 0);
-    player.body.yaw = player.team === 'attack' ? Math.PI : 0;
+    player.body.yaw = player.team === 'attack' ? 0 : Math.PI;
     player.body.pitch = 0;
     player.hp = 100;
     player.alive = true;

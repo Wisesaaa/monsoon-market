@@ -89,7 +89,7 @@ export function createMap(scene) {
     const lamp = box(0.42, 0.55, 0.42, x, 3.5, z, lanternMat, false);
     lamp.castShadow = false;
     if (withLight) {
-      const light = new THREE.PointLight(new THREE.Color(PALETTE.lantern), 10, 12, 1.8);
+      const light = new THREE.PointLight(new THREE.Color(PALETTE.lantern), 14, 15, 1.8);
       light.position.set(x, 3.3, z);
       scene.add(light);
       lights.push(light);
@@ -215,10 +215,10 @@ export function createMap(scene) {
     group.add(bulb);
   }
 
-  // --- lights: moon + sky ---
-  const sky = new THREE.HemisphereLight(new THREE.Color('#3a4a7a'), new THREE.Color('#141828'), 1.5);
+  // --- lights: moon + sky (bright enough that no corner is pitch black) ---
+  const sky = new THREE.HemisphereLight(new THREE.Color('#3a4a7a'), new THREE.Color('#141828'), 2.4);
   scene.add(sky);
-  const ambient = new THREE.AmbientLight(new THREE.Color('#2a3050'), 0.5);
+  const ambient = new THREE.AmbientLight(new THREE.Color('#2a3050'), 1.1);
   scene.add(ambient);
   const moon = new THREE.DirectionalLight(new THREE.Color('#8fa8ff'), 2.2);
   moon.position.set(-14, 22, -8);
@@ -232,7 +232,7 @@ export function createMap(scene) {
   moon.shadow.camera.far = 60;
   moon.shadow.bias = -0.0006;
   scene.add(moon, moon.target);
-  const warm = new THREE.DirectionalLight(new THREE.Color('#ffb27a'), 0.85);
+  const warm = new THREE.DirectionalLight(new THREE.Color('#ffb27a'), 1.4);
   warm.position.set(10, 12, 14);
   scene.add(warm);
 
