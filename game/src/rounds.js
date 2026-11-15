@@ -59,8 +59,8 @@ export function createRounds(G, deps) {
     for (const a of G.actors) {
       a.team = a.team === 'attack' ? 'defend' : 'attack';
       if (!a.isPlayer && a.mesh) {
-        const body = a.team === 'attack' ? 0x6b4a2f : 0x2f4a5c;
-        const trim = a.team === 'attack' ? 0xc96a3b : 0x3e6b8c;
+        const body = a.team === 'attack' ? 0x7a2438 : 0x1f4d5c;
+        const trim = a.team === 'attack' ? 0xff2e88 : 0x22d3ee;
         a.mesh.traverse((m) => {
           if (!m.isMesh) return;
           if (m.material.emissive && m.material.emissive.getHex() !== 0) m.material.emissive.setHex(trim);

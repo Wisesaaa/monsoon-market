@@ -198,3 +198,12 @@ render 3D isometrik):
 - Brief konsultan Claude: `~/workspace/makefun/threejs-fps-02/CONSULTANT.md`
 - Aturan submit: **JANGAN submit sampai Yiro bilang "gas entry"**
   (2/10 submit terpakai; terakhir = 7833eaf).
+
+## Iterasi 5 — balik ke Monsoon Market (16 Nov ~00:00 WIB, atas koreksi Yiro)
+Yiro: "Map library? Gausah woi. Semua verdict yang gw kasih barusan itu adalah map game yang udah lu entry terakhir" + "Tetep pake yang terakhir di entry aja tinggal upgrade sesuai apa yang lu bilang barusan".
+Artinya: verdict juri (20 yang dia kirim) adalah untuk Monsoon Market (neon night, submission 2) — bukan library. Jadi base-nya balik ke Monsoon Market submission 2 (commit 7833eaf), lalu di-upgrade sesuai daftar 10+1 item dari verdict juri.
+Yang di-restore dari 7833eaf: map.js (night market: Spice Row A / Lantern Court B / Fish Lane), palette.js (neon pink #ff2e88 + cyan #22d3ee), state.js (RAINRUNNERS / STALLKEEPERS, senjata drizzle/monsoon/longrain/stallbreaker), audio.js (hujan), effects.js (hujan).
+Yang DIKEEP dari iterasi Yardline/AAA/rifle: rifle two-tone AR (buildRifle, black + tan), soldier bots (helmet/vest/backpack/arms), red-dot sight + rail + foregrip, damage numbers + health/armor bars + weapon icon, camera fill light.
+Yang diperbaiki saat restore: areaAt() ditambahkan ke map.js (SPICE ROW / LANTERN COURT / FISH LANE / A LONG / B LONG / MARKET ENTRANCE / NORTH STALLS), runShot staging balik ke koordinat Monsoon Market, id senjata dikembalikan (monsoon/drizzle/longrain/stallbreaker), nama tim di top bar + matchEnd (RAIN/STALL), overlay copy + README balik ke Monsoon Market.
+Tes: 4 capture staged, nol error. Dossier 136.941 byte (headroom ~26,9 KB untuk upgrade).
+Yang masih jelek: ini baru restore — upgrade 11 item (nav/hearing/collide/viewmodel/player/bots/ADS/plant zone/scoreboard) belum dimulai. 60 FPS + pointer lock masih belum terverifikasi di desktop Chrome asli. TIDAK di-submit (hold: Yiro preview dulu, baru dia bilang "gas entry").

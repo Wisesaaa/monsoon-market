@@ -3,7 +3,7 @@
 [![rank](https://make.fun/badge/threejs-fps-02/Wisesaaa/monsoon-market/rank.svg)](https://make.fun/bounty/threejs-fps-02/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=threejs-fps-02)
 [![reward](https://make.fun/badge/threejs-fps-02/Wisesaaa/monsoon-market/reward.svg)](https://make.fun/bounty/threejs-fps-02?utm_source=github&utm_medium=readme&utm_campaign=threejs-fps-02)
 
-Yardline — a 5v5 round-based tactical FPS in a sun-baked grand library. Plant the charge at the Study Room or the Archive Room, buy your loadout each freeze phase, and outplay five bots who follow team plans, hold sites, call out contacts on the radio, and rotate on the plant. First to 7 rounds takes the match.
+Monsoon Market — a 5v5 round-based tactical FPS in a rain-slicked neon night market. Plant the Stormcell at Spice Row or Lantern Court, buy your loadout each freeze phase, and outplay five bots who follow team plans, hold sites, call out contacts on the radio, and rotate on the plant. First to 7 rounds takes the match.
 
 Three lanes (Long Haul, Mid Yard, Tunnel), two bombsites, a buy economy, and a rifle, SMG, DMR, shotgun, pistol and knife — all modelled from real silhouettes, all textures painted procedurally, all sounds synthesized in WebAudio. No external assets, no network requests.
 

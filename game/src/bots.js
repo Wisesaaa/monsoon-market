@@ -208,9 +208,9 @@ export function createBots(scene, map, mover, G) {
   function buyFor(bot, round) {
     const budget = bot.money;
     let weapon = 'p9';
-    if (round >= 2 && budget >= 2700) weapon = 'longhaul';
-    else if (round >= 2 && budget >= 1500) weapon = 'yard';
-    else if (budget >= 3500 && bot.role === 'Marksman') weapon = 'crane';
+    if (round >= 2 && budget >= 2700) weapon = 'monsoon';
+    else if (round >= 2 && budget >= 1500) weapon = 'drizzle';
+    else if (budget >= 3500 && bot.role === 'Marksman') weapon = 'longrain';
     if (bot.weapon) bot.weapon.dispose();
     bot.weapon = createWeaponInstance(null, weapon);
     bot.weapon.refill();
@@ -255,7 +255,7 @@ export function createBots(scene, map, mover, G) {
       if (bot.team === 'attack') ai += 1; else di += 1;
       bot.body.position.set(spawn[0], 0, spawn[1]);
       bot.body.velocity.set(0, 0, 0);
-      bot.body.yaw = bot.team === 'attack' ? 0 : Math.PI; // face into the yard
+      bot.body.yaw = bot.team === 'attack' ? 0 : Math.PI; // face into the market
       bot.body.pitch = 0;
       bot.hp = 100;
       bot.alive = true;
