@@ -43,6 +43,10 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(PALETTE.sky);
 const camera = new THREE.PerspectiveCamera(74, window.innerWidth / window.innerHeight, 0.05, 140);
 scene.add(camera);
+// warm fill light on the camera so the viewmodel never goes black at sunset
+const viewFill = new THREE.PointLight(new THREE.Color('#ffd9a0'), 0.55, 3, 1.5);
+viewFill.position.set(0, 0.1, 0.15);
+camera.add(viewFill);
 
 const map = createMap(scene);
 const audio = createAudio();
@@ -220,6 +224,7 @@ function playerShoot() {
       let dmg = w.def.damage * (isHead ? w.def.headMult : 1);
       if (hitActor.armor > 0) dmg *= 0.6;
       damage(hitActor, dmg, isHead, player);
+      hud.damageNumber(Math.round(dmg), isHead);
       anyHit = true;
     } else if (hits.length > 0) {
       effects.spark(end, 5);

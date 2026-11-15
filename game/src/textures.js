@@ -238,16 +238,17 @@ export function radialSprite(inner, outer) {
   return tex;
 }
 
-// --- gradient sky dome texture (top blue -> warm horizon) ---
+// --- gradient sky dome texture (sunset: deep blue top -> orange horizon) ---
 export function skyTexture() {
   const c = document.createElement('canvas');
   c.width = 4;
   c.height = 256;
   const ctx = c.getContext('2d');
   const grad = ctx.createLinearGradient(0, 0, 0, 256);
-  grad.addColorStop(0, '#6fa8d8');
-  grad.addColorStop(0.45, '#a8c8e0');
-  grad.addColorStop(0.72, '#f2d9a8');
+  grad.addColorStop(0, '#4a6a9a');
+  grad.addColorStop(0.42, '#9a8a9a');
+  grad.addColorStop(0.68, '#e8a05e');
+  grad.addColorStop(0.85, '#f2b96e');
   grad.addColorStop(1, '#e8c48f');
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 4, 256);

@@ -61,7 +61,36 @@ Semua kode ditulis sendiri di sesi ini (brief desain saja, bukan kode).
   dan **layar akhir ronde** (sudah ada, nama tim diperbarui).
 - Objective: "charge" (bukan Stormcell). Tim: RUSTJACKS vs YARD CREW.
 
-## Hasil tes (Chrome desktop via Camoufox/Xvfb)
+## Iterasi 2 — dorong ke arah AAA (15 Nov ~20:45–20:50 WIB, dari 4 gambar referensi Yiro)
+Yiro: "maunya yang begini, kayak Counter Strike / Delta Force / Call of Duty,
+bukan kotak-kotak doang." Jujur: persis AAA tidak bisa (itu game ratusan
+orang, model hasil scan). Yang didorong ke arah itu:
+
+- **Prajurit (bot) bukan lagi kotak:** helm + kepala, rompi dengan kantong
+  + chest light, ransel, lengan yang megang senapan ke depan, kaki +
+  boots, senapan di tangan. Kaki mengayun saat jalan (walk cycle).
+- **Senjata:** red-dot sight (housing + ring + dot merah menyala), rail
+  atas dengan slot, foregrip vertikal, charging handle. Tangan depan
+  sekarang megang foregrip.
+- **Lingkungan sunset:** matahari rendah (bayangan panjang), langit
+  gradasi biru-ungu → oranye, kabut hangat. Gedung latar (blok gudang
+  gelap + jendela menyala), scaffolding (tiang + papan), pipa di pagar
+  barat, grafiti "YARD" di pagar timur.
+- **HUD:** angka damage melayang di dekat crosshair (kuning kalau
+  headshot), bar health/armor di bawah angka, ikon siluet senapan di
+  kotak senjata, nama tim di top bar (RUST / YARD).
+- **Fill light di kamera** supaya viewmodel tidak hitam di sunset.
+- Hasil tes: 4 screenshot staged nol error; dossier 141.128 byte
+  (< 163.840 cap); 4 gambar; cover = 1-cover.jpg.
+
+### Yang masih jelek (iterasi 2)
+- Prajurit masih dari primitif (kotak/silinder/bola) — siluetnya sudah
+  manusia, tapi detail kain, wajah, dan gear masih kasar.
+- Red-dot sight kecil dan susah dilihat dari sudut pandang pemain.
+- Gedung latar agak datar (kotak gelap + jendela menyala).
+- Lantai depan masih polos; langit atas kosong.
+- 60 FPS + pointer lock tetap belum terverifikasi di Chrome desktop
+  beneran (lingkungan tes tanpa GPU).
 - 4 screenshot staged: **nol error** di semua. Viewmodel rifle + muzzle
   flash + tracer + HUD lengkap terlihat.
 - Gerakan (W) jalan — callout area berubah ATTACK SPAWN → MID YARD.

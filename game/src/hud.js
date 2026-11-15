@@ -32,6 +32,8 @@ export function createHud(minimapData, callbacks) {
     plantBar: $('plant-bar'), plantFill: $('plant-fill'), plantLabel: $('plant-label'),
     carry: $('carry'),
     damage: $('damage'), area: $('area'),
+    dmgnum: $('dmgnum'),
+    hpBar: $('hp-bar'), armorBar: $('armor-bar'),
   };
   const mapCtx = els.minimap.getContext('2d');
   let hitTimer = 0;
@@ -66,6 +68,18 @@ export function createHud(minimapData, callbacks) {
       setText(els.armor, `${Math.max(0, Math.ceil(armor))}${hasHelm ? ' +H' : ''}`, 'armor');
       setText(els.money, `$${money}`, 'money');
       els.hp.parentElement.classList.toggle('low', hp <= 25);
+      if (els.hpBar) els.hpBar.style.width = `${Math.max(0, Math.min(100, hp))}%`;
+      if (els.armorBar) els.armorBar.style.width = `${Math.max(0, Math.min(100, armor))}%`;
+    },
+    // floating damage number near the crosshair ("YOU hit X for 24")
+    damageNumber(amount, isHead) {
+      const span = document.createElement('span');
+      span.textContent = String(amount);
+      if (isHead) span.classList.add('head');
+      span.style.left = `${(Math.random() * 60 - 10)}px`;
+      span.style.top = `${(Math.random() * 30 - 50)}px`;
+      els.dmgnum.appendChild(span);
+      setTimeout(() => span.remove(), 750);
     },
     setWeapon(weaponId, mag, reserve, slots, utility) {
       const def = WEAPONS[weaponId];

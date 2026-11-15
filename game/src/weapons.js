@@ -39,6 +39,24 @@ function buildRifle() {
   g.add(cyl(0.02, 0.52, STEEL, 0, 0.02, -0.44)); // long barrel
   g.add(box(0.08, 0.09, 0.3, WOOD, 0, -0.015, -0.32)); // wooden handguard
   g.add(box(0.05, 0.03, 0.12, WOOD_DARK, 0, 0.045, -0.3)); // handguard top rail
+  // top rail: thin strip with slots along the receiver + handguard
+  g.add(box(0.04, 0.015, 0.5, STEEL_DARK, 0, 0.062, -0.18));
+  for (let i = 0; i < 6; i += 1) {
+    g.add(box(0.045, 0.018, 0.012, STEEL, 0, 0.062, -0.38 + i * 0.07));
+  }
+  // red-dot sight: housing + ring + glowing dot, on the rail
+  g.add(box(0.05, 0.06, 0.07, STEEL_DARK, 0, 0.1, 0.02));
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.008, 8, 20), STEEL);
+  ring.position.set(0, 0.1, 0.02);
+  g.add(ring);
+  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8),
+    new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff2e1e') }));
+  dot.position.set(0, 0.1, 0.02);
+  g.add(dot);
+  // vertical foregrip under the handguard
+  g.add(box(0.045, 0.11, 0.05, POLYMER, 0, -0.1, -0.38, 0.1));
+  // charging handle on the side
+  g.add(box(0.02, 0.02, 0.06, STEEL, 0.055, 0.02, 0.1));
   // curved magazine: three segments, each tilted a little more
   g.add(box(0.05, 0.13, 0.07, STEEL, 0, -0.11, -0.04, 0.12));
   g.add(box(0.05, 0.12, 0.07, STEEL, 0, -0.2, -0.09, 0.32));
@@ -46,12 +64,11 @@ function buildRifle() {
   g.add(box(0.07, 0.1, 0.24, WOOD, 0, -0.02, 0.3, -0.06)); // wooden stock
   g.add(box(0.06, 0.13, 0.07, POLYMER, 0, -0.11, 0.12, 0.35)); // pistol grip
   g.add(box(0.02, 0.05, 0.02, STEEL, 0, 0.085, -0.66)); // front sight post
-  g.add(box(0.05, 0.02, 0.06, STEEL, 0, 0.07, 0.14)); // rear sight
   g.add(box(0.015, 0.03, 0.1, STEEL_DARK, 0, -0.06, 0.02)); // trigger guard
   g.add(cyl(0.024, 0.06, STEEL_DARK, 0, 0.02, -0.7)); // muzzle nut
-  // two gloved hands
+  // two gloved hands: rear on the grip, front on the foregrip
   g.add(box(0.1, 0.1, 0.13, GLOVE, 0, -0.11, 0.12, 0.35)); // rear hand on grip
-  g.add(box(0.1, 0.09, 0.15, GLOVE, 0, -0.075, -0.32)); // front hand on handguard
+  g.add(box(0.09, 0.1, 0.1, GLOVE, 0, -0.11, -0.38, 0.1)); // front hand on foregrip
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.72) };
 }
 
