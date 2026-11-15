@@ -1,13 +1,13 @@
-// Monsoon Market — the DOM HUD. It never touches the simulation; main.js
+// Yardline — the DOM HUD. It never touches the simulation; main.js
 // pushes numbers in and reads callbacks out. Minimap is a 2D canvas drawn
 // from the map's own rectangles, so it can never disagree with the world.
 import { WEAPONS, UTILITY, ECONOMY } from './state.js';
 
 const BUY_ITEMS = [
-  { id: 'drizzle', label: 'DRIZZLE SMG', price: 1500, note: 'fast · close' },
-  { id: 'monsoon', label: 'MONSOON AR', price: 2700, note: 'all-round rifle' },
-  { id: 'stallbreaker', label: 'STALLBREAKER', price: 1800, note: '6 pellets · close' },
-  { id: 'longrain', label: 'LONG RAIN DMR', price: 3500, note: '80 dmg · slow' },
+  { id: 'yard', label: 'YARD SMG', price: 1500, note: 'fast · close' },
+  { id: 'longhaul', label: 'LONGHAUL AR', price: 2700, note: 'all-round rifle' },
+  { id: 'dockbreaker', label: 'DOCK BREAKER', price: 1800, note: '6 pellets · close' },
+  { id: 'crane', label: 'CRANE DMR', price: 3500, note: '80 dmg · slow' },
   { id: 'armor', label: 'KEVLAR', price: 650, note: '+100 armour' },
   { id: 'helm', label: 'HELMET', price: 350, note: 'headshot cover' },
   { id: 'frag', label: 'FRAG', price: 300, note: 'throwable' },
@@ -31,11 +31,13 @@ export function createHud(minimapData, callbacks) {
     minimap: $('minimap'),
     plantBar: $('plant-bar'), plantFill: $('plant-fill'), plantLabel: $('plant-label'),
     carry: $('carry'),
+    damage: $('damage'), area: $('area'),
   };
   const mapCtx = els.minimap.getContext('2d');
   let hitTimer = 0;
   let last = {};
   let bannerTimer = 0;
+  let damageTimer = 0;
 
   function setText(el, value, key) {
     if (last[key] !== value) {
@@ -156,6 +158,20 @@ export function createHud(minimapData, callbacks) {
     setCarrying(show) {
       els.carry.hidden = !show;
     },
+    // red wedge pointing at the direction the damage came from (degrees,
+    // 0 = ahead, positive = to the right of where the player faces)
+    damageFrom(deg) {
+      els.damage.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
+      els.damage.classList.add('on');
+      clearTimeout(damageTimer);
+      damageTimer = setTimeout(() => els.damage.classList.remove('on'), 700);
+    },
+    setArea(name) {
+      if (last.area !== name) {
+        last.area = name;
+        els.area.textContent = name;
+      }
+    },
     drawMinimap(G, player) {
       const c = mapCtx;
       const W = els.minimap.width;
@@ -164,17 +180,17 @@ export function createHud(minimapData, callbacks) {
       const px = (x) => ((x - minX) / (maxX - minX)) * W;
       const pz = (z) => ((z - minZ) / (maxZ - minZ)) * H;
       c.clearRect(0, 0, W, H);
-      c.fillStyle = 'rgba(38, 46, 78, 0.94)';
+      c.fillStyle = 'rgba(233, 220, 196, 0.95)';
       c.fillRect(0, 0, W, H);
-      c.fillStyle = '#7d6a7a';
+      c.fillStyle = '#8a7358';
       for (const [x1, z1, x2, z2] of blocks) c.fillRect(px(x1), pz(z1), px(x2) - px(x1), pz(z2) - pz(z1));
       c.font = 'bold 11px system-ui, sans-serif';
       c.textAlign = 'center';
       for (const key of ['A', 'B']) {
         const s = sites[key];
-        c.fillStyle = key === 'A' ? '#ffb020' : '#22d3ee';
+        c.fillStyle = key === 'A' ? '#c96a3b' : '#3e6b8c';
         c.fillRect(px(s.minX), pz(s.minZ), px(s.maxX) - px(s.minX), px(s.maxZ) - pz(s.minZ));
-        c.fillStyle = '#0b0e1e';
+        c.fillStyle = '#fff8ec';
         c.fillText(key, px(s.x), pz(s.z) + 4);
       }
       for (const a of G.actors) {
@@ -185,7 +201,7 @@ export function createHud(minimapData, callbacks) {
           c.save();
           c.translate(x, y);
           c.rotate(-a.body.yaw);
-          c.fillStyle = '#ffffff';
+          c.fillStyle = '#2b241c';
           c.beginPath();
           c.moveTo(0, -6);
           c.lineTo(4, 5);
@@ -194,16 +210,16 @@ export function createHud(minimapData, callbacks) {
           c.fill();
           c.restore();
         } else {
-          c.fillStyle = a.team === player.team ? '#3ddc84' : '#ff4d4d';
+          c.fillStyle = a.team === player.team ? '#4d8a5a' : '#d94f3d';
           c.beginPath();
           c.arc(x, y, 3, 0, Math.PI * 2);
           c.fill();
         }
       }
-      // stormcell carrier marker
+      // charge carrier marker
       const carrier = G.actors.find((a) => a.id === G.stormcell.carrierId && a.alive);
       if (carrier && !G.stormcell.planted) {
-        c.strokeStyle = '#ffb020';
+        c.strokeStyle = '#c96a3b';
         c.lineWidth = 1.5;
         c.beginPath();
         c.arc(px(carrier.body.position.x), pz(carrier.body.position.z), 6, 0, Math.PI * 2);
@@ -211,7 +227,7 @@ export function createHud(minimapData, callbacks) {
       }
       if (G.stormcell.planted) {
         const s = sites[G.stormcell.site];
-        c.fillStyle = '#ff4d4d';
+        c.fillStyle = '#d94f3d';
         c.beginPath();
         c.arc(px(s.x), pz(s.z), 5, 0, Math.PI * 2);
         c.fill();
@@ -219,10 +235,10 @@ export function createHud(minimapData, callbacks) {
     },
     showOverlay(mode, data) {
       const copy = {
-        start: ['MONSOON MARKET', 'Rain-slicked night market. 5v5, plant the Stormcell, first to 7. Click to play.', 'Click to play'],
+        start: ['YARDLINE', 'Container yard. 5v5, plant the charge, first to 7. Click to play.', 'Click to play'],
         paused: ['Paused', 'Click to resume.', 'Click to resume'],
         roundEnd: [`Round ${data?.round || ''} — ${data?.winner || ''}`, data?.reason || '', 'Next round…'],
-        matchEnd: [data?.winner === 'attack' ? 'RAINRUNNERS WIN' : data?.winner === 'defend' ? 'STALLKEEPERS WIN' : 'DRAW', data?.score || '', 'Play again'],
+        matchEnd: [data?.winner === 'attack' ? 'RUSTJACKS WIN' : data?.winner === 'defend' ? 'YARD CREW WIN' : 'DRAW', data?.score || '', 'Play again'],
       }[mode];
       if (!copy) return;
       els.overlayTitle.textContent = copy[0];

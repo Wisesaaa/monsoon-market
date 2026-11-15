@@ -1,8 +1,8 @@
-// Monsoon Market — the round machine. Freeze (buy) -> live -> planted ->
+// Yardline — the round machine. Freeze (buy) -> live -> planted ->
 // round end -> next round, first to 7 of 12, teams swap at the half.
 // It owns the timer, the money, the plant/defuse progress and the win checks.
 // main.js drives it once per fixed step and reads the events it emits.
-import { ROUND, ECONOMY, WEAPONS, UTILITY } from './state.js';
+import { ROUND, ECONOMY, WEAPONS, UTILITY, TEAMS } from './state.js';
 
 export function createRounds(G, deps) {
   const { audio, radio, feed, onEvent } = deps;
@@ -27,7 +27,7 @@ export function createRounds(G, deps) {
     awardMoney(winner, ECONOMY.win);
     awardMoney(winner === 'attack' ? 'defend' : 'attack', ECONOMY.loss);
     const score = `${G.scoreAttack} — ${G.scoreDefend}`;
-    radio('SYSTEM', `${winner === 'attack' ? 'RAINRUNNERS' : 'STALLKEEPERS'} take round ${G.round} (${reason}) · ${score}`);
+    radio('SYSTEM', `${winner === 'attack' ? TEAMS.ATTACK.name : TEAMS.DEFEND.name} take round ${G.round} (${reason}) · ${score}`);
     onEvent('roundEnd', { winner, reason });
     if (G.scoreAttack >= ROUND.winRounds || G.scoreDefend >= ROUND.winRounds || G.round >= ROUND.maxRounds) {
       G.matchWinner = G.scoreAttack > G.scoreDefend ? 'attack' : G.scoreDefend > G.scoreAttack ? 'defend' : 'draw';
@@ -59,8 +59,8 @@ export function createRounds(G, deps) {
     for (const a of G.actors) {
       a.team = a.team === 'attack' ? 'defend' : 'attack';
       if (!a.isPlayer && a.mesh) {
-        const body = a.team === 'attack' ? 0x7a2438 : 0x1f4d5c;
-        const trim = a.team === 'attack' ? 0xff2e88 : 0x22d3ee;
+        const body = a.team === 'attack' ? 0x6b4a2f : 0x2f4a5c;
+        const trim = a.team === 'attack' ? 0xc96a3b : 0x3e6b8c;
         a.mesh.traverse((m) => {
           if (!m.isMesh) return;
           if (m.material.emissive && m.material.emissive.getHex() !== 0) m.material.emissive.setHex(trim);
@@ -120,7 +120,7 @@ export function createRounds(G, deps) {
             sc.fuse = ROUND.fuse;
             G.phase = 'planted';
             if (carrier.isPlayer) carrier.money += ECONOMY.plant;
-            radio(carrier.isPlayer ? 'YOU' : carrier.name, `Stormcell planted at ${site} — 40 seconds on the fuse`);
+            radio(carrier.isPlayer ? 'YOU' : carrier.name, `Charge planted at ${site} — 40 seconds on the fuse`);
             audio.plantBeep();
             onEvent('planted', { site });
           }
@@ -133,7 +133,7 @@ export function createRounds(G, deps) {
           && Math.hypot(a.body.position.x - spot.x, a.body.position.z - spot.z) < 1.6);
         if (picker) {
           sc.carrierId = picker.id;
-          if (picker.isPlayer) radio('YOU', 'You picked up the Stormcell');
+          if (picker.isPlayer) radio('YOU', 'You picked up the charge');
         }
       }
     } else {
@@ -153,7 +153,7 @@ export function createRounds(G, deps) {
           sc.defuserId = defuser.id;
           if (sc.defuseProgress >= need) {
             if (defuser.isPlayer) defuser.money += ECONOMY.defuse;
-            endRound('defend', 'stormcell defused');
+            endRound('defend', 'charge defused');
             return;
           }
         } else {
@@ -164,7 +164,7 @@ export function createRounds(G, deps) {
       if (sc.fuse <= 0) {
         audio.explode();
         onEvent('explode', { site: sc.site });
-        endRound('attack', 'stormcell detonated');
+        endRound('attack', 'charge detonated');
         return;
       }
     }
