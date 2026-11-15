@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Yardline — a three.js tactical FPS</title>
 <style>
-  /* Yardline look: warm sun, sand, terracotta, faded container paint. */
+  /* Monsoon Market look: neon night, rain-slicked stalls, pink + cyan. */
   :root {
     --canvas: #d9c39a;
     --surface: #efe6d0;
@@ -145,11 +145,11 @@
   <div id="flash"></div>
   <canvas id="minimap" width="200" height="170"></canvas>
   <div id="topbar" class="panel">
-    <span class="team-name">RUST</span>
+    <span class="team-name">RAIN</span>
     <span class="team" id="team-a">0</span>
     <span id="timer">1:40</span>
     <span class="team" id="team-b">0</span>
-    <span class="team-name">YARD</span>
+    <span class="team-name">STALL</span>
     <span id="round-label">ROUND 1 OF 12</span>
     <span id="plan-label"></span>
   </div>
@@ -159,7 +159,7 @@
   <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
   <div id="dmgnum"></div>
   <div id="damage"><i></i></div>
-  <div id="area">ENTRANCE LOBBY</div>
+  <div id="area">MARKET ENTRANCE</div>
   <div id="banner" class="panel" hidden><div id="banner-title"></div><div id="banner-sub"></div></div>
   <div id="plant-bar" class="panel" hidden><div id="plant-label"></div><div id="plant-fill"></div></div>
   <div id="carry" hidden>◆ CARRYING THE CHARGE — TAKE IT TO A OR B</div>
@@ -173,7 +173,7 @@
       <path d="M6 20 h38 l4 -6 h30 l6 6 h14 l4 -4 h10 v6 h-6 l-2 6 h-8 l2 -6 h-14 l-4 8 h-8 l4 -8 h-20 l-6 6 h-12 l2 -6 h-18 z" fill="#2b241c"/>
       <circle cx="78" cy="10" r="4" fill="none" stroke="#2b241c" stroke-width="2"/>
     </svg>
-    <div id="weapon-name">P9 SIDEARM</div>
+    <div id="weapon-name">PETRICHOR P9</div>
     <div id="ammo"><span id="ammo-mag">12</span><span id="ammo-reserve">/ 36</span></div>
     <div id="slots"></div>
     <div id="util"></div>
@@ -188,7 +188,7 @@
 <div id="overlay" class="overlay">
   <section class="panel-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
     <h1 id="overlay-title">YARD<span>LINE</span></h1>
-    <p id="overlay-copy">A grand library. 5v5, plant the charge, first to 7. Click to play.</p>
+    <p id="overlay-copy">Rain-slicked night market. 5v5, plant the Stormcell, first to 7. Click to play.</p>
     <button id="play" type="button">Click to play</button>
     <ul class="keys">
       <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</li>

@@ -1,49 +1,43 @@
-// Yardline — one place for every number the game balances on: weapons,
-// utility, economy, rounds, teams and bot names. Nothing else in the code
-// invents a price, a damage or a timer. All names are original.
+// Monsoon Market — one place for every number the game balances on:
+// weapons, utility, economy, rounds, teams and bot names. Nothing else
+// in the code invents a price, a damage or a timer.
 export const TEAMS = {
-  ATTACK: { id: 'attack', name: 'RUSTJACKS', short: 'RUST', color: '#c96a3b' },
-  DEFEND: { id: 'defend', name: 'YARD CREW', short: 'YARD', color: '#3e6b8c' },
+  ATTACK: { id: 'attack', name: 'RAINRUNNERS', short: 'RAIN', color: '#ff2e88' },
+  DEFEND: { id: 'defend', name: 'STALLKEEPERS', short: 'STALL', color: '#22d3ee' },
 };
 
 // damage is per body hit; head multiplies. spread is radians of cone half-angle.
-// bloomPerShot is how much the cone grows per shot while held (SMG punishes holding).
 export const WEAPONS = {
   p9: {
-    id: 'p9', name: 'P9 SIDEARM', kind: 'pistol', price: 0,
+    id: 'p9', name: 'PETRICHOR P9', kind: 'pistol', price: 0,
     damage: 34, headMult: 4, mag: 12, reserve: 36, fireGap: 0.16, reload: 1.4,
-    spreadStill: 0.003, spreadMove: 0.018, auto: false, kick: 0.005, range: 60,
-    bloomPerShot: 0.002,
+    spreadStill: 0.004, spreadMove: 0.02, auto: false, kick: 0.006, range: 60,
   },
-  yard: {
-    id: 'yard', name: 'YARD SMG', kind: 'smg', price: 1500,
-    damage: 24, headMult: 4, mag: 32, reserve: 128, fireGap: 0.07, reload: 1.7,
-    spreadStill: 0.007, spreadMove: 0.032, auto: true, kick: 0.004, range: 55,
-    bloomPerShot: 0.006,
+  drizzle: {
+    id: 'drizzle', name: 'DRIZZLE SMG', kind: 'smg', price: 1500,
+    damage: 26, headMult: 4, mag: 30, reserve: 120, fireGap: 0.075, reload: 1.7,
+    spreadStill: 0.006, spreadMove: 0.03, auto: true, kick: 0.005, range: 55,
   },
-  longhaul: {
-    id: 'longhaul', name: 'LONGHAUL AR', kind: 'rifle', price: 2700,
-    damage: 33, headMult: 4, mag: 25, reserve: 100, fireGap: 0.1, reload: 1.9,
-    spreadStill: 0.0022, spreadMove: 0.028, auto: true, kick: 0.011, range: 80,
-    bloomPerShot: 0.004,
+  monsoon: {
+    id: 'monsoon', name: 'MONSOON AR', kind: 'rifle', price: 2700,
+    damage: 33, headMult: 4, mag: 25, reserve: 100, fireGap: 0.096, reload: 1.9,
+    spreadStill: 0.0022, spreadMove: 0.028, auto: true, kick: 0.009, range: 80,
   },
-  crane: {
-    id: 'crane', name: 'CRANE DMR', kind: 'dmr', price: 3500,
+  longrain: {
+    id: 'longrain', name: 'LONG RAIN DMR', kind: 'dmr', price: 3500,
     damage: 80, headMult: 4, mag: 10, reserve: 30, fireGap: 0.9, reload: 2.4,
     spreadStill: 0.0012, spreadMove: 0.04, auto: false, kick: 0.02, range: 100,
-    bloomPerShot: 0.001,
   },
-  dockbreaker: {
-    id: 'dockbreaker', name: 'DOCK BREAKER', kind: 'shotgun', price: 1800,
+  stallbreaker: {
+    id: 'stallbreaker', name: 'STALLBREAKER', kind: 'shotgun', price: 1800,
     damage: 22, headMult: 3, mag: 6, reserve: 24, fireGap: 0.8, reload: 2.6,
-    spreadStill: 0.03, spreadMove: 0.05, auto: false, kick: 0.024, range: 25,
-    pellets: 6, bloomPerShot: 0.004,
+    spreadStill: 0.03, spreadMove: 0.05, auto: false, kick: 0.022, range: 25,
+    pellets: 6,
   },
   knife: {
-    id: 'knife', name: 'SCRAP KNIFE', kind: 'knife', price: 0,
+    id: 'knife', name: 'RAIN KNIFE', kind: 'knife', price: 0,
     damage: 40, headMult: 1, mag: Infinity, reserve: 0, fireGap: 0.5, reload: 0,
     spreadStill: 0, spreadMove: 0, auto: false, kick: 0, range: 2.2,
-    bloomPerShot: 0,
   },
 };
 
@@ -68,7 +62,7 @@ export const ECONOMY = {
 export const ROUND = {
   freeze: 8, // seconds of buy phase
   live: 100, // round timer
-  fuse: 40, // charge fuse after plant
+  fuse: 40, // stormcell fuse after plant
   plantTime: 3, // seconds holding E to plant
   defuseTime: 5,
   defuseKitTime: 2.5,
@@ -82,12 +76,12 @@ export const BOT_NAMES = [
   { name: 'Budi', role: 'Support' },
   { name: 'Sari', role: 'Anchor' },
   { name: 'Agus', role: 'Lurk' },
-  { name: 'Dewi', role: 'Marksman' },
+  { name: 'Dewi', role: 'AWP' },
   { name: 'Joko', role: 'Entry' },
   { name: 'Maya', role: 'Support' },
   { name: 'Rizky', role: 'Anchor' },
   { name: 'Lestari', role: 'Lurk' },
-  { name: 'Fajar', role: 'Marksman' },
+  { name: 'Fajar', role: 'AWP' },
 ];
 
 // One store for all match state. Modules read and write this object only;

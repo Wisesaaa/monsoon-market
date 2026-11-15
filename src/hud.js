@@ -4,10 +4,10 @@
 import { WEAPONS, UTILITY, ECONOMY } from './state.js';
 
 const BUY_ITEMS = [
-  { id: 'yard', label: 'YARD SMG', price: 1500, note: 'fast · close' },
-  { id: 'longhaul', label: 'LONGHAUL AR', price: 2700, note: 'all-round rifle' },
-  { id: 'dockbreaker', label: 'DOCK BREAKER', price: 1800, note: '6 pellets · close' },
-  { id: 'crane', label: 'CRANE DMR', price: 3500, note: '80 dmg · slow' },
+  { id: 'drizzle', label: 'DRIZZLE SMG', price: 1500, note: 'fast · close' },
+  { id: 'monsoon', label: 'MONSOON AR', price: 2700, note: 'all-round rifle' },
+  { id: 'stallbreaker', label: 'STALLBREAKER', price: 1800, note: '6 pellets · close' },
+  { id: 'longrain', label: 'LONG RAIN DMR', price: 3500, note: '80 dmg · slow' },
   { id: 'armor', label: 'KEVLAR', price: 650, note: '+100 armour' },
   { id: 'helm', label: 'HELMET', price: 350, note: 'headshot cover' },
   { id: 'frag', label: 'FRAG', price: 300, note: 'throwable' },
@@ -249,10 +249,10 @@ export function createHud(minimapData, callbacks) {
     },
     showOverlay(mode, data) {
       const copy = {
-        start: ['YARDLINE', 'Container yard. 5v5, plant the charge, first to 7. Click to play.', 'Click to play'],
+        start: ['MONSOON MARKET', 'Rain-slicked night market. 5v5, plant the Stormcell, first to 7. Click to play.', 'Click to play'],
         paused: ['Paused', 'Click to resume.', 'Click to resume'],
         roundEnd: [`Round ${data?.round || ''} — ${data?.winner || ''}`, data?.reason || '', 'Next round…'],
-        matchEnd: [data?.winner === 'attack' ? 'RUSTJACKS WIN' : data?.winner === 'defend' ? 'YARD CREW WIN' : 'DRAW', data?.score || '', 'Play again'],
+        matchEnd: [data?.winner === 'attack' ? 'RAINRUNNERS WIN' : data?.winner === 'defend' ? 'STALLKEEPERS WIN' : 'DRAW', data?.score || '', 'Play again'],
       }[mode];
       if (!copy) return;
       els.overlayTitle.textContent = copy[0];
