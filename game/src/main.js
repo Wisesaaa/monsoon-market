@@ -1,10 +1,10 @@
-// Monsoon Market — boot and the one loop: a fixed 60 Hz simulation feeding
+// Yardline — boot and the one loop: a fixed 60 Hz simulation feeding
 // a render at the display's rate. ?shot=cover|buy|mid|site with &seed=N sets
 // up a deterministic frame for a capture, renders it twice, then freezes it
 // and sets window.__shotReady.
 import * as THREE from 'three';
 import { PALETTE } from './palette.js';
-import { WEAPONS, ROUND, ECONOMY, createGameState } from './state.js';
+import { WEAPONS, ROUND, ECONOMY, TEAMS, createGameState } from './state.js';
 import { createMap } from './map.js';
 import { createAudio } from './audio.js';
 import { createInput } from './input.js';
@@ -143,13 +143,25 @@ function damage(target, amount, isHead, attacker) {
         }
       }
       if (G.stormcell.carrierId === target.id) {
-        radio('SYSTEM', `${target.name} dropped the Stormcell`);
+        radio('SYSTEM', `${target.name} dropped the charge`);
       }
     }
   } else if (target.isPlayer) {
     audio.hit(false);
     hud.hitMarker(false);
+    if (attacker) damageDirection(attacker);
   }
+}
+
+// red wedge in the HUD pointing at whoever just shot the player
+function damageDirection(attacker) {
+  const dx = attacker.body.position.x - player.body.position.x;
+  const dz = attacker.body.position.z - player.body.position.z;
+  const attackerYaw = Math.atan2(-dx, -dz);
+  let rel = attackerYaw - player.body.yaw;
+  while (rel > Math.PI) rel -= Math.PI * 2;
+  while (rel < -Math.PI) rel += Math.PI * 2;
+  hud.damageFrom(-rel * 180 / Math.PI);
 }
 
 const raycaster = new THREE.Raycaster();
@@ -169,6 +181,10 @@ function playerShoot() {
   if (!w.takeRound()) return;
   w.pullTrigger();
   audio.shot(w.def.kind, false);
+  // eject a brass shell from the muzzle, up and to the right
+  const muzzleWorld = w.model.localToWorld(new THREE.Vector3().copy(w.muzzleLocal));
+  const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+  effects.shell(muzzleWorld, right);
   camera.getWorldDirection(_dir);
   const spread = w.spread(mover.groundSpeed(player.body));
   const pellets = w.def.pellets || 1;
@@ -207,6 +223,9 @@ function playerShoot() {
       anyHit = true;
     } else if (hits.length > 0) {
       effects.spark(end, 5);
+      // bullet hole on the wall, facing back along the shot
+      const n = new THREE.Vector3().copy(_to).multiplyScalar(-1);
+      effects.decal(end, n);
     }
   }
   if (anyHit) audio.hit(false);
@@ -330,10 +349,10 @@ const rounds = createRounds(G, {
       hud.showBuy(false);
       hud.setBuyAfford(player.money);
     } else if (kind === 'planted') {
-      hud.showBanner('STORMCELL PLANTED', `Site ${data.site} — 40 seconds on the fuse`, 4000);
+      hud.showBanner('CHARGE PLANTED', `Site ${data.site} — 40 seconds on the fuse`, 4000);
     } else if (kind === 'roundEnd') {
       hud.showBuy(false);
-      hud.showOverlay('roundEnd', { round: G.round, winner: data.winner === 'attack' ? 'RAINRUNNERS' : 'STALLKEEPERS', reason: data.reason });
+      hud.showOverlay('roundEnd', { round: G.round, winner: data.winner === 'attack' ? TEAMS.ATTACK.name : TEAMS.DEFEND.name, reason: data.reason });
       setTimeout(() => hud.hideOverlay(), 3800);
     } else if (kind === 'matchEnd') {
       const score = `${G.scoreAttack} — ${G.scoreDefend}`;
@@ -385,11 +404,14 @@ function syncHud() {
   } else if (sc.planted && player.team === 'defend') {
     hud.setPlantBar(sc.defuserId === 'you', sc.defuserId === 'you' ? 'DEFUSING — hold E' : `FUSE ${Math.max(0, Math.ceil(sc.fuse))}s`, sc.defuseProgress / ROUND.defuseTime);
   } else if (sc.planted) {
-    hud.setPlantBar(true, `FUSE ${Math.max(0, Math.ceil(sc.fuse))}s — defend the cell`, sc.fuse / ROUND.fuse);
+    hud.setPlantBar(true, `FUSE ${Math.max(0, Math.ceil(sc.fuse))}s — defend the charge`, sc.fuse / ROUND.fuse);
   } else {
     hud.setPlantBar(false, '', 0);
   }
   hud.drawMinimap(G, player);
+  // area callout: name the part of the yard the player is standing in
+  const area = map.areaAt(player.body.position.x, player.body.position.z);
+  hud.setArea(area);
 }
 
 function step(dt) {
@@ -397,9 +419,24 @@ function step(dt) {
   // player movement
   if (player.alive && G.phase !== 'matchEnd') {
     mover.stepBody(player.body, dt, input.state.keys);
+    // footsteps: a soft thud every couple of metres while moving on the ground
+    const spd = mover.groundSpeed(player.body);
+    if (spd > 0.5 && player.body.onGround) {
+      stepAcc += spd * dt;
+      if (stepAcc > 2.4) {
+        stepAcc = 0;
+        audio.step();
+      }
+    }
   }
-  // player weapon
-  if (player.weapon) player.weapon.step(dt);
+  // player weapon: sway and bob follow the mouse and the feet
+  if (player.weapon) {
+    player.weapon.step(dt, {
+      speed: mover.groundSpeed(player.body),
+      lookX: lastLook.x,
+      lookY: lastLook.y,
+    });
+  }
   // bots only fight once the round is live (or the cell is planted);
   // during freeze and round end they hold at their spawns.
   const combat = G.phase === 'live' || G.phase === 'planted';
@@ -451,6 +488,8 @@ let frozen = false;
 let started = false;
 let accumulator = 0;
 let lastTime = performance.now();
+let stepAcc = 0; // distance since the last footstep sound
+let lastLook = { x: 0, y: 0 }; // mouse delta this frame, for weapon sway
 
 hud.setVitals(100, 0, false, ECONOMY.start);
 syncWeaponHud();
@@ -490,6 +529,7 @@ function frame(now) {
   lastTime = now;
   if (!frozen) {
     const look = input.takeLook();
+    lastLook = look;
     if (player.alive) {
       player.body.yaw -= look.x * 0.0022;
       player.body.pitch = Math.max(-1.45, Math.min(1.45, player.body.pitch - look.y * 0.0022));
@@ -497,7 +537,7 @@ function frame(now) {
     // weapon slots / grenades / buy / reload
     if (G.phase === 'freeze') {
       const buyKeys = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0'];
-      const buyIds = ['drizzle', 'monsoon', 'stallbreaker', 'longrain', 'armor', 'helm', 'frag', 'smoke', 'flash', 'kit'];
+      const buyIds = ['yard', 'longhaul', 'dockbreaker', 'crane', 'armor', 'helm', 'frag', 'smoke', 'flash', 'kit'];
       buyKeys.forEach((code, i) => {
         if (input.wasPressed(code)) buyItem(buyIds[i]);
       });
@@ -585,21 +625,23 @@ function runShot(name) {
   hud.showBuy(false);
   const attackers = bots.bots.filter((b) => b.team === 'attack');
   const defenders = bots.bots.filter((b) => b.team === 'defend');
+  // staged shots use the rifle so the viewmodel reads in the frame
+  if (name !== 'buy') setWeapon(player, 'longhaul');
 
   if (name === 'cover') {
-    // neon alley firefight through the gate
-    placeActor(player, -6, 12, Math.PI * 0.92);
+    // firefight through the container gate, mid yard
+    placeActor(player, 0, 10, Math.PI);
     player.money = 2350;
     G.stormcell.carrierId = 'you';
-    placeActor(defenders[0], 4, -2, Math.PI / 2);
+    placeActor(defenders[0], 0, -4, 0);
     placeActor(defenders[1], -8, -6, -Math.PI / 2);
-    placeActor(attackers[0], -3, 10, Math.PI);
-    radio('Rani', 'Contact at Fish Lane — two on B long');
+    placeActor(attackers[0], -3, 8, Math.PI);
+    radio('Rani', 'Contact mid — two pushing the gate');
     settle(8);
-    aimAt(new THREE.Vector3(4, 1.3, -2));
+    aimAt(new THREE.Vector3(0, 1.3, -4));
     playerShoot();
     settle(4);
-    drawTracerTo(new THREE.Vector3(4, 1.3, -2));
+    drawTracerTo(new THREE.Vector3(0, 1.3, -4));
   } else if (name === 'buy') {
     G.phase = 'freeze';
     G.timer = 6;
@@ -608,44 +650,50 @@ function runShot(name) {
     hud.showBuy(true, player.money);
     hud.setBuyAfford(player.money);
     settle(20);
-    aimAt(new THREE.Vector3(0, 1.6, 2));
+    aimAt(new THREE.Vector3(0, 1.6, 0));
   } else if (name === 'mid') {
-    placeActor(player, -5, 11, Math.PI * 0.95);
+    // long haul sightline: the whole west lane in one frame
+    placeActor(player, -18, 12, Math.PI);
     player.money = 1850;
     G.stormcell.carrierId = 'you';
-    placeActor(defenders[0], 4, 0, Math.PI);
-    placeActor(defenders[1], -8, -4, 0);
-    placeActor(attackers[0], 3, 8, Math.PI);
-    effects.smoke(new THREE.Vector3(0, 1, 2));
-    radio('Sari', 'Two mid — smoking the gate');
+    placeActor(defenders[0], -18, -2, 0);
+    placeActor(defenders[1], -14, -6, -Math.PI / 2);
+    placeActor(attackers[0], -16, 8, Math.PI);
+    radio('Sari', 'One long — holding the haul');
     settle(6);
-    aimAt(new THREE.Vector3(4, 1.3, 0));
+    aimAt(new THREE.Vector3(-18, 1.3, -2));
     playerShoot();
     settle(4);
-    drawTracerTo(new THREE.Vector3(4, 1.3, 0));
+    drawTracerTo(new THREE.Vector3(-18, 1.3, -2));
   } else if (name === 'site') {
-    // stormcell planted at B, defender defusing, player pushing in
+    // charge planted at B, defender defusing, player pushing up the tunnel
     G.stormcell.planted = true;
     G.stormcell.site = 'B';
     G.stormcell.fuse = 37;
     G.phase = 'planted';
-    placeActor(player, 8, 1, Math.PI * 0.72);
+    placeActor(player, 17.5, 2, Math.PI);
     player.money = 3200;
-    placeActor(defenders[0], 17, -8, Math.PI / 2);
+    placeActor(defenders[0], 18, -10, 0);
     defenders[0].state = 'defuse';
-    placeActor(defenders[1], 13, -4, 0);
-    placeActor(attackers[0], 12, 2, Math.PI);
-    hud.showBanner('STORMCELL PLANTED', 'Site B — 37 seconds on the fuse', 60000);
-    radio('YOU', 'Stormcell planted at B — hold the court');
+    placeActor(defenders[1], 15, -6, -Math.PI / 2);
+    placeActor(attackers[0], 17.5, 6, Math.PI);
+    hud.showBanner('CHARGE PLANTED', 'Site B — 37 seconds on the fuse', 60000);
+    radio('YOU', 'Charge planted at B — hold the yard');
     settle(6);
-    aimAt(new THREE.Vector3(17, 1.3, -8));
+    aimAt(new THREE.Vector3(18, 1.3, -10));
     playerShoot();
     settle(4);
-    drawTracerTo(new THREE.Vector3(17, 1.3, -8));
+    drawTracerTo(new THREE.Vector3(18, 1.3, -10));
   }
   syncCamera();
   syncWeaponHud();
   syncHud();
+  // keep the muzzle flash lit for the capture frame on the shooting shots
+  if (name === 'cover' || name === 'mid' || name === 'site') {
+    player.weapon.flash.visible = true;
+    player.weapon.flash.scale.set(0.24, 0.24, 1);
+    player.weapon.flashLight.intensity = 26;
+  }
   paintTwiceThenReady();
 }
 

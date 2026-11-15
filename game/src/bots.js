@@ -1,4 +1,4 @@
-// Monsoon Market — the bots. Nine of them: four teammates, five opponents.
+// Yardline — the bots. Nine of them: four teammates, five opponents.
 // Each has a name, a role and a route. Attackers follow a team plan to a site
 // (and the carrier plants); defenders hold a site, listen, and rotate on
 // contact or on a plant. They see with a cone + line of sight, hear gunshots,
@@ -15,15 +15,15 @@ const BOT_SPEED_KEY = 5.2;
 
 const PLANS = [
   { id: 'splitA', text: 'SPLIT A — 3 long, 2 mid', site: 'A', routes: ['attackA', 'attackA', 'attackMidA', 'attackMidA', 'attackA'] },
-  { id: 'rushB', text: 'B RUSH — 4 long, 1 mid', site: 'B', routes: ['attackB', 'attackB', 'attackB', 'attackMidB', 'attackB'] },
+  { id: 'rushB', text: 'B RUSH — 4 tunnel, 1 mid', site: 'B', routes: ['attackB', 'attackB', 'attackB', 'attackMidB', 'attackB'] },
   { id: 'midA', text: 'MID CONTROL — take mid, hit A', site: 'A', routes: ['attackMidA', 'attackMidA', 'attackMidA', 'attackA', 'attackB'] },
 ];
 
 function bodyColor(team) {
-  return team === 'attack' ? new THREE.Color('#7a2438') : new THREE.Color('#1f4d5c');
+  return team === 'attack' ? new THREE.Color('#6b4a2f') : new THREE.Color('#2f4a5c');
 }
 function trimColor(team) {
-  return team === 'attack' ? new THREE.Color('#ff2e88') : new THREE.Color('#22d3ee');
+  return team === 'attack' ? new THREE.Color('#c96a3b') : new THREE.Color('#3e6b8c');
 }
 
 function makeBotMesh(team) {
@@ -95,7 +95,7 @@ export function createBots(scene, map, mover, G) {
   })();
 
   function spawnBot(index, team, name, role) {
-    const body = createBody(0, 0, team === 'attack' ? Math.PI : 0);
+    const body = createBody(0, 0, team === 'attack' ? 0 : Math.PI);
     const { group, head, torso } = makeBotMesh(team);
     scene.add(group);
     head.userData = { actor: null, part: 'head' };
@@ -131,6 +131,8 @@ export function createBots(scene, map, mover, G) {
       keys: new Set(),
       walkPhase: 0,
       radioAt: -99,
+      // difficulty: 0.6 (rookie) .. 1.0 (sharp). Marksmen react faster.
+      skill: role === 'Marksman' ? 0.9 + random() * 0.1 : 0.6 + random() * 0.3,
     };
     head.userData.actor = bot;
     torso.userData.actor = bot;
@@ -153,9 +155,9 @@ export function createBots(scene, map, mover, G) {
   function buyFor(bot, round) {
     const budget = bot.money;
     let weapon = 'p9';
-    if (round >= 2 && budget >= 2700) weapon = 'monsoon';
-    else if (round >= 2 && budget >= 1500) weapon = 'drizzle';
-    else if (budget >= 3500 && bot.role === 'AWP') weapon = 'longrain';
+    if (round >= 2 && budget >= 2700) weapon = 'longhaul';
+    else if (round >= 2 && budget >= 1500) weapon = 'yard';
+    else if (budget >= 3500 && bot.role === 'Marksman') weapon = 'crane';
     if (bot.weapon) bot.weapon.dispose();
     bot.weapon = createWeaponInstance(null, weapon);
     bot.weapon.refill();
@@ -185,7 +187,7 @@ export function createBots(scene, map, mover, G) {
       bot.state = 'hold';
       const wp = map.waypoints[bot.route];
       bot.holdPos = wp;
-      bot.watchYaw = bot.team === 'defend' ? 0 : Math.PI;
+      bot.watchYaw = Math.PI; // defenders face south, into the yard
     });
     return plan;
   }
@@ -200,7 +202,7 @@ export function createBots(scene, map, mover, G) {
       if (bot.team === 'attack') ai += 1; else di += 1;
       bot.body.position.set(spawn[0], 0, spawn[1]);
       bot.body.velocity.set(0, 0, 0);
-      bot.body.yaw = bot.team === 'attack' ? Math.PI : 0;
+      bot.body.yaw = bot.team === 'attack' ? 0 : Math.PI; // face into the yard
       bot.body.pitch = 0;
       bot.hp = 100;
       bot.alive = true;
@@ -274,7 +276,8 @@ export function createBots(scene, map, mover, G) {
       }
       if (best) {
         if (bot.target !== best) {
-          bot.reaction = 0.35 + random() * 0.3;
+          // reaction delay: sharper bots react faster
+          bot.reaction = (0.55 - bot.skill * 0.25) + random() * 0.25;
           if (time - bot.radioAt > 8) {
             bot.radioAt = time;
             radio(bot, `Contact ${best.name ? best.name : 'enemy'} — ${bot.role === 'Anchor' ? 'holding' : 'engaging'}`);
@@ -322,8 +325,14 @@ export function createBots(scene, map, mover, G) {
           bot.weapon.pullTrigger();
           const dist = Math.hypot(dx, dz);
           const moving = Math.hypot(t.body.velocity.x, t.body.velocity.z) > 2;
-          let chance = 0.55 - dist * 0.008 - (moving ? 0.12 : 0) - (bot.weapon.def.kind === 'smg' ? 0.05 : 0);
-          chance = Math.max(0.08, Math.min(0.75, chance));
+          // accuracy: worse at range, worse if the target runs, worse if
+          // this bot is still moving (it stops to shoot, so a bot that just
+          // halted is less accurate), better when settled and skilled.
+          const ownSpeed = Math.hypot(bot.body.velocity.x, bot.body.velocity.z);
+          let chance = 0.5 - dist * 0.008 - (moving ? 0.12 : 0)
+            - (ownSpeed > 1 ? 0.15 : 0) + (ownSpeed < 0.5 ? 0.06 : 0)
+            + (bot.skill - 0.75) * 0.3 - (bot.weapon.def.kind === 'smg' ? 0.05 : 0);
+          chance = Math.max(0.08, Math.min(0.78, chance));
           const hit = random() < chance;
           const head = hit && random() < 0.14;
           const from = new THREE.Vector3(bot.body.position.x + 0.3, bot.body.position.y + 1.35, bot.body.position.z);

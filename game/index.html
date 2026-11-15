@@ -3,20 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monsoon Market — a three.js tactical FPS</title>
+<title>Yardline — a three.js tactical FPS</title>
 <style>
-  /* Monsoon Market look: night rain, neon pink and cyan, wet stone. */
+  /* Yardline look: warm sun, sand, terracotta, faded container paint. */
   :root {
-    --canvas: #0b0e1e;
-    --surface: #141828;
-    --hairline: #2a3050;
-    --ink: #f2ede4;
-    --muted: #9aa0b4;
-    --pink: #ff2e88;
-    --cyan: #22d3ee;
-    --amber: #ffb020;
-    --danger: #ff4d4d;
-    --ok: #3ddc84;
+    --canvas: #d9c39a;
+    --surface: #efe6d0;
+    --hairline: #b39a72;
+    --ink: #2b241c;
+    --muted: #7a6a55;
+    --pink: #c96a3b;
+    --cyan: #3e6b8c;
+    --amber: #c98f2e;
+    --danger: #d94f3d;
+    --ok: #4d8a5a;
     --radius: 4px;
     --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
     --font-readout: ui-monospace, 'SF Mono', Menlo, monospace;
@@ -47,9 +47,15 @@
   #hitmarker i:nth-child(3) { top: 12px; left: 0; height: 2px; width: 8px; }
   #hitmarker i:nth-child(4) { top: 12px; right: 0; height: 2px; width: 8px; }
 
-  .panel { background: rgba(11, 14, 30, 0.82); border: 1px solid var(--hairline); border-radius: var(--radius); }
+  .panel { background: rgba(239, 230, 208, 0.88); border: 1px solid var(--hairline); border-radius: var(--radius); }
 
-  #minimap { position: fixed; left: 16px; top: 16px; width: 200px; height: 170px; border: 1px solid var(--hairline); border-radius: var(--radius); background: rgba(11, 14, 30, 0.85); }
+  #minimap { position: fixed; left: 16px; top: 16px; width: 200px; height: 170px; border: 1px solid var(--hairline); border-radius: var(--radius); background: rgba(233, 220, 196, 0.95); }
+
+  #damage { position: fixed; left: 50%; top: 50%; width: 120px; height: 120px; transform: translate(-50%, -50%); opacity: 0; pointer-events: none; }
+  #damage.on { opacity: 1; transition: opacity 0.5s; }
+  #damage i { position: absolute; left: 50%; top: 0; width: 0; height: 0; margin-left: -14px; border-left: 14px solid transparent; border-right: 14px solid transparent; border-bottom: 22px solid var(--danger); }
+
+  #area { position: fixed; left: 16px; top: 200px; font-family: var(--font-readout); font-size: 12px; letter-spacing: 0.14em; color: var(--ink); background: rgba(239, 230, 208, 0.8); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 5px 10px; }
 
   #topbar { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 8px 16px; font-family: var(--font-readout); }
   #topbar .team { font-weight: 700; font-size: 15px; }
@@ -60,13 +66,13 @@
   #plan-label { font-size: 11px; color: var(--amber); letter-spacing: 0.06em; }
 
   #feed { position: fixed; right: 16px; top: 16px; display: grid; gap: 4px; justify-items: end; font-size: 12px; }
-  .feed-line { padding: 3px 8px; background: rgba(11, 14, 30, 0.8); border-radius: 3px; color: var(--muted); transition: opacity 1s; }
+  .feed-line { padding: 3px 8px; background: rgba(239, 230, 208, 0.85); border-radius: 3px; color: var(--muted); transition: opacity 1s; }
   .feed-line.good { color: var(--ok); }
   .feed-line.bad { color: var(--danger); }
   .feed-line.fade { opacity: 0.25; }
 
-  #radio { position: fixed; left: 16px; top: 200px; display: grid; gap: 4px; font-size: 12px; max-width: 340px; }
-  .radio-line { padding: 4px 8px; background: rgba(11, 14, 30, 0.75); border-left: 2px solid var(--cyan); border-radius: 3px; color: var(--ink); transition: opacity 1s; }
+  #radio { position: fixed; left: 16px; top: 240px; display: grid; gap: 4px; font-size: 12px; max-width: 340px; }
+  .radio-line { padding: 4px 8px; background: rgba(239, 230, 208, 0.8); border-left: 2px solid var(--cyan); border-radius: 3px; color: var(--ink); transition: opacity 1s; }
   .radio-line.mine { border-left-color: var(--pink); }
   .radio-line b { color: var(--cyan); margin-right: 6px; }
   .radio-line.mine b { color: var(--pink); }
@@ -108,7 +114,7 @@
   .buy-item i { font-style: normal; font-size: 11px; color: var(--amber); font-family: var(--font-readout); }
   .buy-item.poor { opacity: 0.45; }
 
-  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(11, 14, 30, 0.86); }
+  .overlay { position: fixed; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(43, 36, 28, 0.82); }
   .overlay[hidden] { display: none; }
   .panel-card { width: min(460px, 100%); padding: 32px; background: var(--surface); border: 1px solid var(--hairline); border-radius: var(--radius); }
   .panel-card h1 { margin: 0 0 8px; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
@@ -138,16 +144,18 @@
   <div id="radio"></div>
   <div id="crosshair"><i></i><i></i><i></i><i></i><i></i></div>
   <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+  <div id="damage"><i></i></div>
+  <div id="area">ATTACK SPAWN</div>
   <div id="banner" class="panel" hidden><div id="banner-title"></div><div id="banner-sub"></div></div>
   <div id="plant-bar" class="panel" hidden><div id="plant-label"></div><div id="plant-fill"></div></div>
-  <div id="carry" hidden>◆ CARRYING THE STORMCELL — TAKE IT TO A OR B</div>
+  <div id="carry" hidden>◆ CARRYING THE CHARGE — TAKE IT TO A OR B</div>
   <div id="vitals">
     <div class="vital panel"><label>HEALTH</label><b id="hp-value">100</b></div>
     <div class="vital panel"><label>ARMOUR</label><b id="armor-value">0</b></div>
     <div class="vital panel"><label>MONEY</label><b id="money-value">$800</b></div>
   </div>
   <div id="weaponbox" class="panel">
-    <div id="weapon-name">PETRICHOR P9</div>
+    <div id="weapon-name">P9 SIDEARM</div>
     <div id="ammo"><span id="ammo-mag">12</span><span id="ammo-reserve">/ 36</span></div>
     <div id="slots"></div>
     <div id="util"></div>
@@ -161,8 +169,8 @@
 
 <div id="overlay" class="overlay">
   <section class="panel-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
-    <h1 id="overlay-title">MONSOON <span>MARKET</span></h1>
-    <p id="overlay-copy">Rain-slicked night market. 5v5, plant the Stormcell, first to 7. Click to play.</p>
+    <h1 id="overlay-title">YARD<span>LINE</span></h1>
+    <p id="overlay-copy">Container yard. 5v5, plant the charge, first to 7. Click to play.</p>
     <button id="play" type="button">Click to play</button>
     <ul class="keys">
       <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> Move</li>
