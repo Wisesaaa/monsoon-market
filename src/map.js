@@ -112,9 +112,9 @@ export function createMap(scene) {
   sky.position.y = 0;
   group.add(sky);
 
-  // --- light: one warm afternoon sun + sky fill ---
-  const sun = new THREE.DirectionalLight(new THREE.Color(PALETTE.sun), 3.0);
-  sun.position.set(-26, 34, 18);
+  // --- light: low sunset sun, long shadows + warm sky fill ---
+  const sun = new THREE.DirectionalLight(new THREE.Color('#ff9a3c'), 3.4);
+  sun.position.set(-38, 11, 14);
   sun.target.position.set(0, 0, 0);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -122,12 +122,97 @@ export function createMap(scene) {
   sun.shadow.camera.right = 30;
   sun.shadow.camera.top = 30;
   sun.shadow.camera.bottom = -30;
-  sun.shadow.camera.far = 90;
+  sun.shadow.camera.far = 110;
   sun.shadow.bias = -0.0004;
   scene.add(sun, sun.target);
-  const hemi = new THREE.HemisphereLight(new THREE.Color('#bcd6ea'), new THREE.Color('#c9b18c'), 1.15);
+  const hemi = new THREE.HemisphereLight(new THREE.Color('#e8b98a'), new THREE.Color('#8a6a4a'), 0.95);
   scene.add(hemi);
-  scene.fog = new THREE.Fog(new THREE.Color('#e8d9b8'), 46, 110);
+  scene.fog = new THREE.Fog(new THREE.Color('#e8b98a'), 42, 105);
+
+  // --- background city: dark warehouse blocks with warm lit windows ---
+  const matCity = new THREE.MeshStandardMaterial({ color: new THREE.Color('#5a4a3c'), roughness: 0.95 });
+  const matWindow = new THREE.MeshStandardMaterial({
+    color: new THREE.Color('#3a2f26'), emissive: new THREE.Color('#ffb45e'), emissiveIntensity: 1.4, roughness: 0.6,
+  });
+  function cityBlock(x, z, w, d, h, windows) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matCity);
+    m.position.set(x, h / 2 - 0.1, z);
+    group.add(m);
+    // glowing windows on the face toward the yard
+    const faceZ = z > 0 ? -1 : 1;
+    for (const [wx, wy] of windows) {
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), matWindow);
+      win.position.set(x + wx, wy, z + faceZ * (d / 2 + 0.05));
+      if (faceZ < 0) win.rotation.y = Math.PI;
+      group.add(win);
+    }
+  }
+  cityBlock(-38, -8, 14, 20, 14, [[-4, 6], [0, 9], [4, 5], [-2, 11]]);
+  cityBlock(38, 6, 16, 22, 18, [[-5, 8], [0, 12], [5, 6], [-2, 15]]);
+  cityBlock(0, -34, 30, 12, 12, [[-10, 5], [-4, 8], [3, 6], [9, 9]]);
+  cityBlock(-36, 22, 12, 14, 10, [[-3, 5], [2, 7]]);
+  cityBlock(34, -24, 14, 12, 16, [[-4, 7], [1, 11], [4, 5]]);
+
+  // --- scaffolding: poles + planks beside the long lane ---
+  const matScaffold = new THREE.MeshStandardMaterial({ color: new THREE.Color('#8a7a5a'), roughness: 0.8, metalness: 0.4 });
+  function scaffold(x, z) {
+    for (const [dx, dz] of [[-1.4, -0.8], [1.4, -0.8], [-1.4, 0.8], [1.4, 0.8]]) {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 5.2, 6), matScaffold);
+      pole.position.set(x + dx, 2.6, z + dz);
+      pole.castShadow = true;
+      group.add(pole);
+    }
+    const plank = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.12, 2), matWood);
+    plank.position.set(x, 3.4, z);
+    plank.castShadow = true;
+    group.add(plank);
+    const plank2 = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.12, 2), matWood);
+    plank2.position.set(x, 5.0, z);
+    plank2.castShadow = true;
+    group.add(plank2);
+  }
+  scaffold(-11, 8);
+  scaffold(11, -6);
+
+  // --- pipes along the west fence ---
+  const matPipe = new THREE.MeshStandardMaterial({ color: new THREE.Color('#7a6a55'), roughness: 0.6, metalness: 0.5 });
+  for (const [py, pr] of [[2.2, 0.09], [2.5, 0.06]]) {
+    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(pr, pr, 36, 8), matPipe);
+    pipe.rotation.x = Math.PI / 2;
+    pipe.position.set(-23.8, py, 0);
+    group.add(pipe);
+  }
+
+  // --- graffiti on the east fence (spray-paint shapes, canvas) ---
+  const gc = document.createElement('canvas');
+  gc.width = 256;
+  gc.height = 128;
+  const gctx = gc.getContext('2d');
+  gctx.clearRect(0, 0, 256, 128);
+  gctx.strokeStyle = 'rgba(201, 106, 59, 0.85)';
+  gctx.lineWidth = 7;
+  gctx.lineCap = 'round';
+  gctx.beginPath();
+  gctx.moveTo(20, 90);
+  gctx.bezierCurveTo(60, 20, 120, 110, 170, 40);
+  gctx.bezierCurveTo(200, 10, 230, 60, 240, 30);
+  gctx.stroke();
+  gctx.strokeStyle = 'rgba(62, 107, 140, 0.8)';
+  gctx.lineWidth = 5;
+  gctx.beginPath();
+  gctx.moveTo(30, 60);
+  gctx.bezierCurveTo(90, 100, 150, 30, 220, 80);
+  gctx.stroke();
+  gctx.fillStyle = 'rgba(239, 230, 208, 0.75)';
+  gctx.font = 'bold 26px system-ui, sans-serif';
+  gctx.fillText('YARD', 90, 105);
+  const gtex = new THREE.CanvasTexture(gc);
+  gtex.colorSpace = THREE.SRGBColorSpace;
+  const graffiti = new THREE.Mesh(new THREE.PlaneGeometry(6, 3),
+    new THREE.MeshStandardMaterial({ map: gtex, transparent: true, roughness: 0.9 }));
+  graffiti.position.set(23.9, 1.8, 6);
+  graffiti.rotation.y = -Math.PI / 2;
+  group.add(graffiti);
 
   // --- perimeter: brick fence walls ---
   addBox(0, -18.5, 50, 1, 3.6, matBrick, { ground: false });

@@ -59,6 +59,7 @@
 
   #topbar { position: fixed; left: 50%; top: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 14px; padding: 8px 16px; font-family: var(--font-readout); }
   #topbar .team { font-weight: 700; font-size: 15px; }
+  #topbar .team-name { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: var(--muted); }
   #team-a { color: var(--pink); }
   #team-b { color: var(--cyan); }
   #timer { font-size: 22px; font-weight: 700; }
@@ -83,7 +84,17 @@
   .vital label { display: block; font-size: 9px; letter-spacing: 0.12em; color: var(--muted); }
   .vital b { font-size: 22px; font-weight: 700; }
   .vital.low b { color: var(--danger); }
+  .vital .bar { width: 72px; height: 5px; background: rgba(43, 36, 28, 0.25); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+  .vital .bar i { display: block; height: 100%; background: var(--ok); border-radius: 3px; transition: width 120ms linear; }
+  #armor-bar { background: var(--cyan); }
   #money-value { color: var(--amber); }
+
+  #dmgnum { position: fixed; left: 50%; top: 50%; pointer-events: none; }
+  #dmgnum span { position: absolute; font-family: var(--font-readout); font-size: 16px; font-weight: 700; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.7); animation: dmgfloat 0.7s ease-out forwards; }
+  #dmgnum span.head { color: var(--amber); font-size: 19px; }
+  @keyframes dmgfloat { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(-34px); } }
+
+  #weapon-icon { display: block; margin-left: auto; opacity: 0.85; }
 
   #weaponbox { position: fixed; right: 16px; bottom: 16px; padding: 10px 14px; text-align: right; font-family: var(--font-readout); }
   #weapon-name { font-size: 13px; letter-spacing: 0.06em; color: var(--ink); }
@@ -134,9 +145,11 @@
   <div id="flash"></div>
   <canvas id="minimap" width="200" height="170"></canvas>
   <div id="topbar" class="panel">
+    <span class="team-name">RUST</span>
     <span class="team" id="team-a">0</span>
     <span id="timer">1:40</span>
     <span class="team" id="team-b">0</span>
+    <span class="team-name">YARD</span>
     <span id="round-label">ROUND 1 OF 12</span>
     <span id="plan-label"></span>
   </div>
@@ -144,17 +157,22 @@
   <div id="radio"></div>
   <div id="crosshair"><i></i><i></i><i></i><i></i><i></i></div>
   <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+  <div id="dmgnum"></div>
   <div id="damage"><i></i></div>
   <div id="area">ATTACK SPAWN</div>
   <div id="banner" class="panel" hidden><div id="banner-title"></div><div id="banner-sub"></div></div>
   <div id="plant-bar" class="panel" hidden><div id="plant-label"></div><div id="plant-fill"></div></div>
   <div id="carry" hidden>◆ CARRYING THE CHARGE — TAKE IT TO A OR B</div>
   <div id="vitals">
-    <div class="vital panel"><label>HEALTH</label><b id="hp-value">100</b></div>
-    <div class="vital panel"><label>ARMOUR</label><b id="armor-value">0</b></div>
+    <div class="vital panel"><label>HEALTH</label><b id="hp-value">100</b><div class="bar"><i id="hp-bar"></i></div></div>
+    <div class="vital panel"><label>ARMOUR</label><b id="armor-value">0</b><div class="bar"><i id="armor-bar"></i></div></div>
     <div class="vital panel"><label>MONEY</label><b id="money-value">$800</b></div>
   </div>
   <div id="weaponbox" class="panel">
+    <svg id="weapon-icon" viewBox="0 0 120 32" width="120" height="32" aria-hidden="true">
+      <path d="M6 20 h38 l4 -6 h30 l6 6 h14 l4 -4 h10 v6 h-6 l-2 6 h-8 l2 -6 h-14 l-4 8 h-8 l4 -8 h-20 l-6 6 h-12 l2 -6 h-18 z" fill="#2b241c"/>
+      <circle cx="78" cy="10" r="4" fill="none" stroke="#2b241c" stroke-width="2"/>
+    </svg>
     <div id="weapon-name">P9 SIDEARM</div>
     <div id="ammo"><span id="ammo-mag">12</span><span id="ammo-reserve">/ 36</span></div>
     <div id="slots"></div>

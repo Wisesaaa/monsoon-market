@@ -27,29 +27,78 @@ function trimColor(team) {
 }
 
 function makeBotMesh(team) {
+  // A soldier, not a box: helmet, vest with pouches, backpack, arms holding
+  // a rifle forward, legs with boots. Built facing -z (the mesh is rotated
+  // by yaw + PI in syncMesh, so -z is the bot's forward).
   const group = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor(team), roughness: 0.8 });
-  const trimMat = new THREE.MeshStandardMaterial({ color: trimColor(team), roughness: 0.5, emissive: trimColor(team), emissiveIntensity: 0.5 });
+  const uniform = new THREE.MeshStandardMaterial({ color: team === 'attack' ? new THREE.Color('#6b5a3a') : new THREE.Color('#3a4a52'), roughness: 0.9 });
+  const vestMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#2e2a24'), roughness: 0.85 });
+  const trimMat = new THREE.MeshStandardMaterial({ color: trimColor(team), roughness: 0.5, emissive: trimColor(team), emissiveIntensity: 0.4 });
   const skinMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#c9a184'), roughness: 0.8 });
-  const darkMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#1c1e26'), roughness: 0.85 });
+  const darkMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#1c1e24'), roughness: 0.85 });
+  const bootMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#241f18'), roughness: 0.9 });
 
-  const torso = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.62, 0.3), bodyMat);
-  torso.position.y = 1.15;
-  const head = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), skinMat);
-  head.position.y = 1.62;
-  const cap = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.1, 0.34), trimMat);
-  cap.position.y = 1.8;
-  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.8, 0.2), darkMat);
-  legL.position.set(-0.14, 0.4, 0);
-  const legR = legL.clone();
-  legR.position.x = 0.14;
-  const gun = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.1, 0.62), darkMat);
-  gun.position.set(0.28, 1.25, -0.25);
-  const vest = new THREE.Mesh(new THREE.BoxGeometry(0.54, 0.2, 0.32), trimMat);
-  vest.position.y = 1.3;
-  group.add(torso, head, cap, legL, legR, gun, vest);
+  function b(w, h, d, mat, x, y, z, rx = 0, ry = 0, rz = 0) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
+    m.position.set(x, y, z);
+    m.rotation.set(rx, ry, rz);
+    m.castShadow = true;
+    group.add(m);
+    return m;
+  }
+
+  // legs + boots
+  const legL = b(0.17, 0.85, 0.19, uniform, -0.12, 0.48, 0);
+  const legR = b(0.17, 0.85, 0.19, uniform, 0.12, 0.48, 0);
+  b(0.18, 0.1, 0.3, bootMat, -0.12, 0.05, -0.04);
+  b(0.18, 0.1, 0.3, bootMat, 0.12, 0.05, -0.04);
+  // torso + vest + pouches + backpack
+  const torso = b(0.52, 0.6, 0.3, uniform, 0, 1.18, 0);
+  b(0.54, 0.42, 0.08, vestMat, 0, 1.2, -0.17); // vest plate, chest
+  b(0.12, 0.16, 0.06, vestMat, -0.14, 1.18, -0.22); // pouch
+  b(0.12, 0.16, 0.06, vestMat, 0.14, 1.18, -0.22); // pouch
+  b(0.1, 0.12, 0.05, trimMat, 0, 1.32, -0.22); // chest light / marker
+  b(0.4, 0.48, 0.16, vestMat, 0, 1.22, 0.22); // backpack
+  b(0.3, 0.1, 0.06, darkMat, 0, 1.5, 0.24); // backpack top roll
+  // head + helmet
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), skinMat);
+  head.position.set(0, 1.66, 0);
+  head.castShadow = true;
+  group.add(head);
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.175, 12, 10), uniform);
+  helmet.scale.set(1, 0.72, 1.05);
+  helmet.position.set(0, 1.74, 0.01);
+  helmet.castShadow = true;
+  group.add(helmet);
+  const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.2, 0.03, 12), uniform);
+  brim.position.set(0, 1.68, 0);
+  group.add(brim);
+  // arms: rear arm to the grip, front arm to the handguard
+  const armR = b(0.13, 0.13, 0.5, uniform, 0.3, 1.32, -0.18, 0.5, 0, 0);
+  const armL = b(0.13, 0.13, 0.45, uniform, -0.28, 1.3, -0.22, 0.35, 0, 0);
+  b(0.1, 0.1, 0.12, skinMat, 0.3, 1.18, -0.38); // rear hand on grip
+  b(0.1, 0.1, 0.12, skinMat, -0.28, 1.2, -0.42); // front hand on handguard
+  // rifle held forward, slightly angled, in both hands
+  const gun = new THREE.Group();
+  const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.62), darkMat);
+  gunBody.castShadow = true;
+  gun.add(gunBody);
+  const gunBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.34, 8), darkMat);
+  gunBarrel.rotation.x = Math.PI / 2;
+  gunBarrel.position.set(0, 0.02, -0.45);
+  gun.add(gunBarrel);
+  const gunMag = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.07), darkMat);
+  gunMag.position.set(0, -0.1, -0.05);
+  gunMag.rotation.x = 0.25;
+  gun.add(gunMag);
+  const gunStock = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.18), darkMat);
+  gunStock.position.set(0, -0.01, 0.36);
+  gun.add(gunStock);
+  gun.position.set(0.05, 1.28, -0.42);
+  gun.rotation.y = -0.08;
+  group.add(gun);
   group.traverse((m) => { if (m.isMesh) { m.castShadow = true; } });
-  return { group, head, torso };
+  return { group, head, torso, legL, legR };
 }
 
 // segment vs AABB, for line of sight. Returns true when blocked.
@@ -96,7 +145,7 @@ export function createBots(scene, map, mover, G) {
 
   function spawnBot(index, team, name, role) {
     const body = createBody(0, 0, team === 'attack' ? 0 : Math.PI);
-    const { group, head, torso } = makeBotMesh(team);
+    const { group, head, torso, legL, legR } = makeBotMesh(team);
     scene.add(group);
     head.userData = { actor: null, part: 'head' };
     torso.userData = { actor: null, part: 'body' };
@@ -108,6 +157,7 @@ export function createBots(scene, map, mover, G) {
       mesh: group,
       headMesh: head,
       torsoMesh: torso,
+      legL, legR,
       weapon: null,
       hp: 100,
       armor: 0,
@@ -393,9 +443,13 @@ export function createBots(scene, map, mover, G) {
   function syncMesh(bot) {
     bot.mesh.position.set(bot.body.position.x, bot.body.position.y, bot.body.position.z);
     bot.mesh.rotation.y = bot.body.yaw + Math.PI;
-    // simple walk bob
-    const bob = Math.sin(bot.walkPhase * 2) * 0.03 * Math.min(1, Math.hypot(bot.body.velocity.x, bot.body.velocity.z) / 3);
-    bot.mesh.position.y += Math.abs(bob);
+    // walk: legs swing opposite, body bobs
+    const speed = Math.min(1, Math.hypot(bot.body.velocity.x, bot.body.velocity.z) / 3);
+    const swing = Math.sin(bot.walkPhase * 2) * 0.45 * speed;
+    if (bot.legL) bot.legL.rotation.x = swing;
+    if (bot.legR) bot.legR.rotation.x = -swing;
+    const bob = Math.abs(Math.sin(bot.walkPhase * 2)) * 0.03 * speed;
+    bot.mesh.position.y += bob;
   }
 
   function killBot(bot) {
