@@ -1,120 +1,156 @@
-// Yardline — the map. A container yard with a readable tactical structure:
-// three lanes (Long Haul west, Mid Yard centre, Tunnel east), two bombsites
-// (Crane Bay A, Stack Yard B) and a connector for rotations. Cover is
-// shipping containers, stacked crates and chest-high walls; the floor is
-// cracked concrete, the walls are brick, and one warm sun lights it all.
-// All geometry is original; the lane names are ours.
+// Library — a 5v5 bombsite map inside a grand library (Point Blank style).
+// Layout from Yiro's reference: CT spawn in the Main Reading Hall (north),
+// T spawn in the Entrance Lobby (south), Site A = Study Room (west),
+// Site B = Archive Room (east), Mid with a fountain, a Long A Corridor
+// along the west edge and B Tunnels along the east edge, all joined by a
+// Connecting Hallway. Warm interior light: lanterns + window light.
 import * as THREE from 'three';
 import { PALETTE } from './palette.js';
-import { makeTextures, skyTexture, radialSprite } from './textures.js';
+import { makeTextures } from './textures.js';
 
-function makeSign(text, sub, w = 3.2, h = 0.9) {
-  const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 144;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#2b241c';
-  ctx.fillRect(0, 0, 512, 144);
-  ctx.fillStyle = '#c98f2e';
-  ctx.fillRect(0, 0, 512, 10);
-  ctx.fillRect(0, 134, 512, 10);
-  ctx.fillStyle = '#efe6d0';
-  ctx.font = 'bold 64px system-ui, sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText(text, 256, 78);
-  ctx.fillStyle = '#c9b18c';
-  ctx.font = '28px system-ui, sans-serif';
-  ctx.fillText(sub, 256, 116);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  const mesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(w, h),
-    new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85 }),
-  );
-  return mesh;
-}
+const WALL_H = 5.5;
+const WALL_T = 0.5;
 
 export function createMap(scene) {
-  const T = makeTextures();
   const group = new THREE.Group();
   scene.add(group);
-
+  const tex = makeTextures();
   const colliders = [];
   const shootables = [];
   const minimapBlocks = [];
-  const contactTex = radialSprite('rgba(20, 14, 8, 0.5)', 'rgba(20, 14, 8, 0)');
+  const areas = [];
 
-  const matFloor = new THREE.MeshStandardMaterial({ map: T.concrete, roughness: 0.95 });
-  matFloor.map.repeat.set(10, 8);
-  const matBrick = new THREE.MeshStandardMaterial({ map: T.brick, roughness: 0.9 });
-  matBrick.map.repeat.set(1, 1);
-  const matWood = new THREE.MeshStandardMaterial({ map: T.wood, roughness: 0.85 });
-  const matSand = new THREE.MeshStandardMaterial({ map: T.sand, roughness: 1 });
-  const matSteel = new THREE.MeshStandardMaterial({ map: T.steel, roughness: 0.5, metalness: 0.6 });
-  const matBlue = new THREE.MeshStandardMaterial({ map: T.containerBlue, roughness: 0.7, metalness: 0.25 });
-  const matGreen = new THREE.MeshStandardMaterial({ map: T.containerGreen, roughness: 0.7, metalness: 0.25 });
-  const matRed = new THREE.MeshStandardMaterial({ map: T.containerRed, roughness: 0.7, metalness: 0.25 });
-  const matYellow = new THREE.MeshStandardMaterial({ map: T.containerYellow, roughness: 0.7, metalness: 0.25 });
-  const matTerra = new THREE.MeshStandardMaterial({ color: new THREE.Color(PALETTE.terracotta), roughness: 0.85 });
-  const matDark = new THREE.MeshStandardMaterial({ color: new THREE.Color('#3a332b'), roughness: 0.9 });
+  const matWall = new THREE.MeshStandardMaterial({ color: new THREE.Color('#b39a72'), roughness: 0.9, map: tex.brick });
+  const matWallDark = new THREE.MeshStandardMaterial({ color: new THREE.Color('#8a6a4a'), roughness: 0.9 });
+  const matFloor = new THREE.MeshStandardMaterial({ color: new THREE.Color('#c9b18c'), roughness: 0.85, map: tex.concrete });
+  const matWood = new THREE.MeshStandardMaterial({ color: new THREE.Color('#7a5230'), roughness: 0.75, map: tex.wood });
+  const matWoodDark = new THREE.MeshStandardMaterial({ color: new THREE.Color('#5f3d22'), roughness: 0.8, map: tex.wood });
+  const matShelf = new THREE.MeshStandardMaterial({ color: new THREE.Color('#6b4a2f'), roughness: 0.8 });
+  const matBooks = new THREE.MeshStandardMaterial({ map: tex.books, roughness: 0.85 });
+  const matCeil = new THREE.MeshStandardMaterial({ color: new THREE.Color('#8a6a4a'), roughness: 0.95, emissive: new THREE.Color('#3a2a18'), emissiveIntensity: 0.7 });
+  const matWindow = new THREE.MeshStandardMaterial({ color: new THREE.Color('#3a2f26'), emissive: new THREE.Color('#ffb45e'), emissiveIntensity: 1.6, roughness: 0.6 });
+  const matWater = new THREE.MeshStandardMaterial({ color: new THREE.Color('#3e6b8c'), roughness: 0.2, metalness: 0.1, emissive: new THREE.Color('#1a3a4a'), emissiveIntensity: 0.5 });
+  const matLeaf = new THREE.MeshStandardMaterial({ color: new THREE.Color('#4d7a5a'), roughness: 0.9 });
+  const matRug = new THREE.MeshStandardMaterial({ color: new THREE.Color('#a34a3a'), roughness: 0.95 });
+  const matRugGold = new THREE.MeshStandardMaterial({ color: new THREE.Color('#c98f2e'), roughness: 0.95 });
 
-  // A box in the world: mesh + collider + shootable + (optionally) a minimap rect
-  // and a soft contact shadow that grounds it on the concrete.
   function addBox(x, z, w, d, h, mat, opts = {}) {
-    const y = (opts.y ?? 0) + h / 2;
+    const y = opts.y ?? h / 2;
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat);
     mesh.position.set(x, y, z);
+    if (opts.ry) mesh.rotation.y = opts.ry;
     mesh.castShadow = opts.shadow !== false;
     mesh.receiveShadow = true;
-    if (opts.ry) mesh.rotation.y = opts.ry;
     group.add(mesh);
-    const halfW = w / 2;
-    const halfD = d / 2;
-    const box = new THREE.Box3(
-      new THREE.Vector3(x - halfW, y - h / 2, z - halfD),
-      new THREE.Vector3(x + halfW, y + h / 2, z + halfD),
-    );
-    colliders.push(box);
-    shootables.push(mesh);
-    if (opts.map !== false && Math.max(w, d) >= 1.6) {
-      minimapBlocks.push([x - halfW, z - halfD, x + halfW, z + halfD]);
-    }
-    if (opts.ground !== false && h >= 1.5) {
-      const sh = new THREE.Mesh(
-        new THREE.PlaneGeometry(Math.max(w, d) * 1.15, Math.max(w, d) * 1.15),
-        new THREE.MeshBasicMaterial({ map: contactTex, transparent: true, depthWrite: false }),
-      );
-      sh.rotation.x = -Math.PI / 2;
-      sh.position.set(x, 0.02, z);
-      sh.renderOrder = 0;
-      group.add(sh);
+    if (opts.ground !== false) {
+      colliders.push(new THREE.Box3(
+        new THREE.Vector3(x - w / 2, 0, z - d / 2),
+        new THREE.Vector3(x + w / 2, h, z + d / 2),
+      ));
+      shootables.push(mesh);
+      if (Math.max(w, d) >= 1.6) minimapBlocks.push([x - w / 2, z - d / 2, x + w / 2, z + d / 2]);
     }
     return mesh;
   }
 
-  // --- ground: cracked concrete, sand apron outside the fence ---
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(52, 40), matFloor);
+  function addPlane(x, y, z, w, h, mat, ry = 0, rx = 0) {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    mesh.position.set(x, y, z);
+    mesh.rotation.set(rx, ry, 0);
+    mesh.receiveShadow = true;
+    group.add(mesh);
+    return mesh;
+  }
+
+  // --- walls with door gaps ---
+  // A wall along x at height z, from x0 to x1, with gaps (each [gx0, gx1]).
+  function hWall(z, x0, x1, gaps = []) {
+    let cur = x0;
+    const segs = [];
+    for (const [gx0, gx1] of gaps) {
+      if (gx0 > cur) segs.push([cur, gx0]);
+      cur = Math.max(cur, gx1);
+    }
+    if (cur < x1) segs.push([cur, x1]);
+    for (const [sx0, sx1] of segs) {
+      addBox((sx0 + sx1) / 2, z, sx1 - sx0, WALL_T, WALL_H, matWall);
+    }
+    // lintel over each gap
+    for (const [gx0, gx1] of gaps) {
+      addBox((gx0 + gx1) / 2, z, gx1 - gx0, WALL_T, WALL_H - 3, matWallDark, { y: 3 + (WALL_H - 3) / 2, ground: false });
+    }
+  }
+  // A wall along z at x, from z0 to z1, with gaps (each [gz0, gz1]).
+  function vWall(x, z0, z1, gaps = []) {
+    let cur = z0;
+    const segs = [];
+    for (const [gz0, gz1] of gaps) {
+      if (gz0 > cur) segs.push([cur, gz0]);
+      cur = Math.max(cur, gz1);
+    }
+    if (cur < z1) segs.push([cur, z1]);
+    for (const [sz0, sz1] of segs) {
+      addBox(x, (sz0 + sz1) / 2, WALL_T, sz1 - sz0, WALL_H, matWall);
+    }
+    for (const [gz0, gz1] of gaps) {
+      addBox(x, (gz0 + gz1) / 2, WALL_T, gz1 - gz0, WALL_H - 3, matWallDark, { y: 3 + (WALL_H - 3) / 2, ground: false });
+    }
+  }
+
+  // --- floor: wood + checkered lobby ---
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(48, 36), matFloor);
   floor.rotation.x = -Math.PI / 2;
-  floor.position.set(0, 0, 0);
   floor.receiveShadow = true;
   group.add(floor);
-  const apron = new THREE.Mesh(new THREE.PlaneGeometry(120, 110), matSand);
-  apron.rotation.x = -Math.PI / 2;
-  apron.position.set(0, -0.05, 0);
-  apron.receiveShadow = true;
-  group.add(apron);
+  const lobbyFloor = new THREE.Mesh(new THREE.PlaneGeometry(18, 6), new THREE.MeshStandardMaterial({ map: tex.checker, roughness: 0.7 }));
+  lobbyFloor.rotation.x = -Math.PI / 2;
+  lobbyFloor.position.set(0, 0.01, 15);
+  lobbyFloor.receiveShadow = true;
+  group.add(lobbyFloor);
 
-  // --- sky dome: warm gradient ---
-  const sky = new THREE.Mesh(
-    new THREE.SphereGeometry(120, 24, 16),
-    new THREE.MeshBasicMaterial({ map: skyTexture(), side: THREE.BackSide, fog: false }),
-  );
-  sky.position.y = 0;
-  group.add(sky);
+  // --- ceiling (does not cast shadow, so window light still reaches in) ---
+  const ceil = new THREE.Mesh(new THREE.BoxGeometry(48, 0.2, 36), matCeil);
+  ceil.position.set(0, WALL_H + 0.1, 0);
+  group.add(ceil);
+  // ceiling beams
+  for (const bx of [-18, -6, 6, 18]) {
+    addBox(bx, 0, 0.6, 36, 0.3, matWoodDark, { y: WALL_H - 0.1, ground: false, shadow: false });
+  }
 
-  // --- light: low sunset sun, long shadows + warm sky fill ---
-  const sun = new THREE.DirectionalLight(new THREE.Color('#ff9a3c'), 3.4);
-  sun.position.set(-38, 11, 14);
+  // --- perimeter walls (the building shell) ---
+  hWall(-18, -24, 24);
+  hWall(18, -24, 24);
+  vWall(-24, -18, 18);
+  vWall(24, -18, 18);
+
+  // --- interior walls ---
+  hWall(-10, -13, 13, [[-7, -3], [3, 7]]); // reading hall / mid
+  vWall(-13, -18, -10, [[-14, -12]]); // reading hall west
+  vWall(13, -18, -10, [[-14, -12]]); // reading hall east
+  hWall(12, -9, 9, [[-2, 2], [6, 8]]); // lobby / mid
+  vWall(-9, 12, 18, [[13, 15]]); // lobby west
+  vWall(9, 12, 18, [[13, 15]]); // lobby east
+  vWall(-11, -7, 7, [[-2, 2]]); // site A / mid
+  vWall(11, -7, 7, [[-2, 2]]); // site B / mid
+  vWall(-22, -18, 18, [[-14, -12], [-1, 1], [13, 15]]); // long A corridor east
+  vWall(22, -7, 14, [[-1, 1]]); // B tunnel west
+  hWall(-7, 22, 24); // B tunnel north end
+
+  // --- windows: warm glowing panes on the north + south walls ---
+  for (const wx of [-18, -10, -2, 6, 14]) {
+    addPlane(wx, 3.2, -17.7, 3, 2.2, matWindow, 0, 0);
+  }
+  for (const wx of [-14, -6, 2, 10, 18]) {
+    addPlane(wx, 3.2, 17.7, 3, 2.2, matWindow, Math.PI, 0);
+  }
+  // window frames (thin bars)
+  for (const wx of [-18, -10, -2, 6, 14]) {
+    addBox(wx, -17.75, 3.2, 0.1, 0.15, matWoodDark, { y: 3.2, ground: false, shadow: false });
+  }
+
+  // --- light: warm interior (window light + lanterns) ---
+  const sun = new THREE.DirectionalLight(new THREE.Color('#ffd9a0'), 2.2);
+  sun.position.set(14, 30, 10);
   sun.target.position.set(0, 0, 0);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -122,238 +158,328 @@ export function createMap(scene) {
   sun.shadow.camera.right = 30;
   sun.shadow.camera.top = 30;
   sun.shadow.camera.bottom = -30;
-  sun.shadow.camera.far = 110;
+  sun.shadow.camera.far = 100;
   sun.shadow.bias = -0.0004;
   scene.add(sun, sun.target);
-  const hemi = new THREE.HemisphereLight(new THREE.Color('#e8b98a'), new THREE.Color('#8a6a4a'), 0.95);
+  const hemi = new THREE.HemisphereLight(new THREE.Color('#e8c48f'), new THREE.Color('#6a4a2a'), 0.9);
   scene.add(hemi);
-  scene.fog = new THREE.Fog(new THREE.Color('#e8b98a'), 42, 105);
+  scene.fog = new THREE.Fog(new THREE.Color('#d9b98a'), 34, 85);
+  // hanging lanterns (warm point lights, no shadows)
+  function lantern(x, z) {
+    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6), matWoodDark);
+    chain.position.set(x, WALL_H - 0.6, z);
+    group.add(chain);
+    const lamp = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.5, 0.35),
+      new THREE.MeshStandardMaterial({ color: new THREE.Color('#3a2a18'), emissive: new THREE.Color('#ffb45e'), emissiveIntensity: 1.8 }));
+    lamp.position.set(x, WALL_H - 1.4, z);
+    group.add(lamp);
+    const light = new THREE.PointLight(new THREE.Color('#ffb45e'), 0.9, 13, 1.6);
+    light.position.set(x, WALL_H - 1.4, z);
+    group.add(light);
+  }
+  lantern(0, -14);
+  lantern(-16, 0);
+  lantern(16, 0);
+  lantern(0, 0);
+  lantern(0, 15);
 
-  // --- background city: dark warehouse blocks with warm lit windows ---
-  const matCity = new THREE.MeshStandardMaterial({ color: new THREE.Color('#5a4a3c'), roughness: 0.95 });
-  const matWindow = new THREE.MeshStandardMaterial({
-    color: new THREE.Color('#3a2f26'), emissive: new THREE.Color('#ffb45e'), emissiveIntensity: 1.4, roughness: 0.6,
-  });
-  function cityBlock(x, z, w, d, h, windows) {
-    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), matCity);
-    m.position.set(x, h / 2 - 0.1, z);
+  // --- bookshelf: wood frame + book-spine texture front ---
+  function bookshelf(x, z, w = 2, ry = 0, h = 2.6) {
+    const g = new THREE.Group();
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.5), matShelf);
+    frame.position.y = h / 2;
+    frame.castShadow = true;
+    frame.receiveShadow = true;
+    g.add(frame);
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.2, h - 0.3), matBooks);
+    front.position.set(0, h / 2, 0.26);
+    g.add(front);
+    const back = front.clone();
+    back.position.z = -0.26;
+    back.rotation.y = Math.PI;
+    g.add(back);
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+    group.add(g);
+    colliders.push(new THREE.Box3(
+      new THREE.Vector3(x - w / 2, 0, z - 0.3),
+      new THREE.Vector3(x + w / 2, h, z + 0.3),
+    ));
+    shootables.push(frame);
+    minimapBlocks.push([x - w / 2, z - 0.3, x + w / 2, z + 0.3]);
+    return g;
+  }
+
+  // --- reading table + chairs ---
+  function table(x, z, ry = 0) {
+    const g = new THREE.Group();
+    const top = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.12, 1.2), matWood);
+    top.position.y = 0.78;
+    top.castShadow = true;
+    top.receiveShadow = true;
+    g.add(top);
+    for (const [dx, dz] of [[-1.1, -0.5], [1.1, -0.5], [-1.1, 0.5], [1.1, 0.5]]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.78, 0.1), matWoodDark);
+      leg.position.set(dx, 0.39, dz);
+      g.add(leg);
+    }
+    // books + lamp on the table
+    const stack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.35), matBooks);
+    stack.position.set(-0.6, 0.93, 0);
+    g.add(stack);
+    const stack2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.14, 0.3), matBooks);
+    stack2.position.set(0.5, 0.91, 0.1);
+    g.add(stack2);
+    // chairs (two sides)
+    for (const dz of [-0.95, 0.95]) {
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.08, 0.5), matWoodDark);
+      seat.position.set(0, 0.45, dz);
+      g.add(seat);
+      const back = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.08), matWoodDark);
+      back.position.set(0, 0.75, dz + (dz > 0 ? 0.25 : -0.25));
+      g.add(back);
+    }
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+    group.add(g);
+    colliders.push(new THREE.Box3(
+      new THREE.Vector3(x - 1.2, 0, z - 0.6),
+      new THREE.Vector3(x + 1.2, 0.9, z + 0.6),
+    ));
+    shootables.push(top);
+    minimapBlocks.push([x - 1.2, z - 0.6, x + 1.2, z + 0.6]);
+  }
+
+  // --- plant in a pot ---
+  function plant(x, z) {
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.22, 0.5, 10), new THREE.MeshStandardMaterial({ color: new THREE.Color('#a34a3a'), roughness: 0.8 }));
+    pot.position.set(x, 0.25, z);
+    pot.castShadow = true;
+    group.add(pot);
+    const bush = new THREE.Mesh(new THREE.SphereGeometry(0.45, 8, 6), matLeaf);
+    bush.position.set(x, 0.85, z);
+    bush.scale.y = 1.2;
+    bush.castShadow = true;
+    group.add(bush);
+    colliders.push(new THREE.Box3(
+      new THREE.Vector3(x - 0.3, 0, z - 0.3),
+      new THREE.Vector3(x + 0.3, 0.5, z + 0.3),
+    ));
+  }
+
+  // --- bench (lobby) ---
+  function bench(x, z, ry = 0) {
+    const g = new THREE.Group();
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.12, 0.55), matWood);
+    seat.position.y = 0.45;
+    seat.castShadow = true;
+    g.add(seat);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.7, 0.1), matWood);
+    back.position.set(0, 0.8, -0.25);
+    g.add(back);
+    for (const dx of [-1, 1]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.45, 0.5), matWoodDark);
+      leg.position.set(dx, 0.22, 0);
+      g.add(leg);
+    }
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+    group.add(g);
+    colliders.push(new THREE.Box3(
+      new THREE.Vector3(x - 1.1, 0, z - 0.3),
+      new THREE.Vector3(x + 1.1, 0.8, z + 0.3),
+    ));
+    minimapBlocks.push([x - 1.1, z - 0.3, x + 1.1, z + 0.3]);
+  }
+
+  // --- rug (round, flat) ---
+  function rug(x, z, r = 3) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.04, 24), matRug);
+    m.position.set(x, 0.02, z);
+    m.receiveShadow = true;
     group.add(m);
-    // glowing windows on the face toward the yard
-    const faceZ = z > 0 ? -1 : 1;
-    for (const [wx, wy] of windows) {
-      const win = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.8), matWindow);
-      win.position.set(x + wx, wy, z + faceZ * (d / 2 + 0.05));
-      if (faceZ < 0) win.rotation.y = Math.PI;
-      group.add(win);
-    }
-  }
-  cityBlock(-38, -8, 14, 20, 14, [[-4, 6], [0, 9], [4, 5], [-2, 11]]);
-  cityBlock(38, 6, 16, 22, 18, [[-5, 8], [0, 12], [5, 6], [-2, 15]]);
-  cityBlock(0, -34, 30, 12, 12, [[-10, 5], [-4, 8], [3, 6], [9, 9]]);
-  cityBlock(-36, 22, 12, 14, 10, [[-3, 5], [2, 7]]);
-  cityBlock(34, -24, 14, 12, 16, [[-4, 7], [1, 11], [4, 5]]);
-
-  // --- scaffolding: poles + planks beside the long lane ---
-  const matScaffold = new THREE.MeshStandardMaterial({ color: new THREE.Color('#8a7a5a'), roughness: 0.8, metalness: 0.4 });
-  function scaffold(x, z) {
-    for (const [dx, dz] of [[-1.4, -0.8], [1.4, -0.8], [-1.4, 0.8], [1.4, 0.8]]) {
-      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 5.2, 6), matScaffold);
-      pole.position.set(x + dx, 2.6, z + dz);
-      pole.castShadow = true;
-      group.add(pole);
-    }
-    const plank = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.12, 2), matWood);
-    plank.position.set(x, 3.4, z);
-    plank.castShadow = true;
-    group.add(plank);
-    const plank2 = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.12, 2), matWood);
-    plank2.position.set(x, 5.0, z);
-    plank2.castShadow = true;
-    group.add(plank2);
-  }
-  scaffold(-11, 8);
-  scaffold(11, -6);
-
-  // --- pipes along the west fence ---
-  const matPipe = new THREE.MeshStandardMaterial({ color: new THREE.Color('#7a6a55'), roughness: 0.6, metalness: 0.5 });
-  for (const [py, pr] of [[2.2, 0.09], [2.5, 0.06]]) {
-    const pipe = new THREE.Mesh(new THREE.CylinderGeometry(pr, pr, 36, 8), matPipe);
-    pipe.rotation.x = Math.PI / 2;
-    pipe.position.set(-23.8, py, 0);
-    group.add(pipe);
+    const inner = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.6, r * 0.6, 0.045, 24), matRugGold);
+    inner.position.set(x, 0.02, z);
+    inner.receiveShadow = true;
+    group.add(inner);
   }
 
-  // --- graffiti on the east fence (spray-paint shapes, canvas) ---
-  const gc = document.createElement('canvas');
-  gc.width = 256;
-  gc.height = 128;
-  const gctx = gc.getContext('2d');
-  gctx.clearRect(0, 0, 256, 128);
-  gctx.strokeStyle = 'rgba(201, 106, 59, 0.85)';
-  gctx.lineWidth = 7;
-  gctx.lineCap = 'round';
-  gctx.beginPath();
-  gctx.moveTo(20, 90);
-  gctx.bezierCurveTo(60, 20, 120, 110, 170, 40);
-  gctx.bezierCurveTo(200, 10, 230, 60, 240, 30);
-  gctx.stroke();
-  gctx.strokeStyle = 'rgba(62, 107, 140, 0.8)';
-  gctx.lineWidth = 5;
-  gctx.beginPath();
-  gctx.moveTo(30, 60);
-  gctx.bezierCurveTo(90, 100, 150, 30, 220, 80);
-  gctx.stroke();
-  gctx.fillStyle = 'rgba(239, 230, 208, 0.75)';
-  gctx.font = 'bold 26px system-ui, sans-serif';
-  gctx.fillText('YARD', 90, 105);
-  const gtex = new THREE.CanvasTexture(gc);
-  gtex.colorSpace = THREE.SRGBColorSpace;
-  const graffiti = new THREE.Mesh(new THREE.PlaneGeometry(6, 3),
-    new THREE.MeshStandardMaterial({ map: gtex, transparent: true, roughness: 0.9 }));
-  graffiti.position.set(23.9, 1.8, 6);
-  graffiti.rotation.y = -Math.PI / 2;
-  group.add(graffiti);
+  // ============ MAIN READING HALL (CT spawn, north) ============
+  // tall bookshelves along the north wall + reading tables
+  bookshelf(-9, -17.2, 3);
+  bookshelf(-3, -17.2, 3);
+  bookshelf(3, -17.2, 3);
+  bookshelf(9, -17.2, 3);
+  table(-6, -14);
+  table(6, -14);
+  table(0, -12, Math.PI / 2);
+  plant(-12, -12);
+  plant(12, -12);
+  rug(0, -14, 2.5);
+  addPlane(0, 3.4, -17.7, 6, 1, new THREE.MeshStandardMaterial({ map: makeSign('MAIN READING HALL'), transparent: true }), 0, 0);
 
-  // --- perimeter: brick fence walls ---
-  addBox(0, -18.5, 50, 1, 3.6, matBrick, { ground: false });
-  addBox(0, 18.5, 50, 1, 3.6, matBrick, { ground: false });
-  addBox(-24.5, 0, 1, 38, 3.6, matBrick, { ground: false });
-  addBox(24.5, 0, 1, 38, 3.6, matBrick, { ground: false });
+  // ============ ENTRANCE LOBBY (T spawn, south) ============
+  bench(-6, 16.5);
+  bench(6, 16.5);
+  plant(-8, 13);
+  plant(8, 13);
+  plant(-4, 17);
+  plant(4, 17);
+  bookshelf(-7, 17.3, 2);
+  bookshelf(7, 17.3, 2);
+  // big double door (the entrance) on the south wall
+  addBox(-1.2, 17.7, 1.2, 0.15, 3.4, matWoodDark, { y: 1.7, ground: false, shadow: false });
+  addBox(1.2, 17.7, 1.2, 0.15, 3.4, matWoodDark, { y: 1.7, ground: false, shadow: false });
+  addPlane(0, 4, 17.7, 6, 1, new THREE.MeshStandardMaterial({ map: makeSign('ENTRANCE LOBBY'), transparent: true }), Math.PI, 0);
 
-  // --- LONG HAUL (west lane, x -22..-14): long sightline, containers on the sides ---
-  addBox(-21.5, 8, 2.4, 6, 2.6, matBlue); // container, west side
-  addBox(-21.5, -2, 2.4, 6, 2.6, matRed); // container, west side
-  addBox(-21.5, -10, 2.4, 5, 2.6, matGreen); // container near site A
-  addBox(-13.5, 12, 2.4, 5, 2.6, matYellow); // container, east side of long
-  addBox(-13.5, 2, 2.4, 5, 2.6, matBlue); // container, east side of long
-  addBox(-18, 2, 4, 0.6, 1.1, matTerra, { ground: false }); // chest-high wall, long
-  addBox(-16, 6, 1.2, 1.2, 1.2, matWood); // crate
-  addBox(-16, 6, 1.2, 1.2, 1.2, matWood, { y: 1.2, ground: false, map: false }); // stacked crate
-  addBox(-19.5, -6, 1.2, 1.2, 1.2, matWood); // crate near A
+  // ============ SITE A — STUDY ROOM (west) ============
+  // rows of wooden study tables
+  table(-19, -4);
+  table(-14, -4);
+  table(-19, 0);
+  table(-14, 0);
+  table(-19, 4);
+  table(-14, 4);
+  rug(-16.5, 0, 3);
+  bookshelf(-21.5, -6, 2, Math.PI / 2);
+  bookshelf(-21.5, 6, 2, Math.PI / 2);
+  addPlane(-21.7, 3.4, 0, 6, 1, new THREE.MeshStandardMaterial({ map: makeSign('STUDY ROOM — SITE A'), transparent: true }), Math.PI / 2, 0);
 
-  // --- MID YARD (centre, x -5..5): the gate arch + mid crates ---
-  addBox(-4.5, 0, 2.4, 2.4, 2.6, matGreen); // gate pillar west
-  addBox(4.5, 0, 2.4, 2.4, 2.6, matRed); // gate pillar east
-  addBox(0, 0, 11.4, 1.2, 0.9, matYellow, { y: 3.4, ground: false, map: false }); // gate beam overhead (painted gantry)
-  addBox(3, 9, 1.2, 1.2, 1.2, matWood); // crate, mid south (off the centre line)
-  addBox(0, -8, 1.2, 1.2, 1.2, matWood); // crate, mid north
-  addBox(0, 4, 3, 0.6, 1.1, matTerra, { ground: false }); // low wall, mid
-  addBox(-2, -6, 1.2, 1.2, 1.2, matWood); // crate, mid top
-  addBox(2, -6, 1.2, 1.2, 1.2, matWood); // crate, mid top
+  // ============ SITE B — ARCHIVE ROOM (east) ============
+  // rows of tall bookshelves (the archive)
+  bookshelf(14, -5, 2.5);
+  bookshelf(19, -5, 2.5);
+  bookshelf(14, -1, 2.5);
+  bookshelf(19, -1, 2.5);
+  bookshelf(14, 3, 2.5);
+  bookshelf(19, 3, 2.5);
+  bookshelf(14, 6, 2.5);
+  bookshelf(19, 6, 2.5);
+  rug(16.5, 0, 3);
+  table(16.5, -5.5);
+  addPlane(21.7, 3.4, 0, 6, 1, new THREE.MeshStandardMaterial({ map: makeSign('ARCHIVE ROOM — SITE B'), transparent: true }), -Math.PI / 2, 0);
 
-  // --- TUNNEL (east lane, x 14..22): roofed corridor, containers for walls ---
-  addBox(13, 10, 2.4, 6, 2.6, matRed); // tunnel west wall
-  addBox(13, 2, 2.4, 6, 2.6, matBlue); // tunnel west wall
-  addBox(13, -4, 2.4, 5, 2.6, matGreen); // tunnel west wall near B
-  addBox(21.5, 10, 2.4, 6, 2.6, matGreen); // tunnel east wall
-  addBox(21.5, 2, 2.4, 6, 2.6, matYellow); // tunnel east wall
-  addBox(21.5, -6, 2.4, 4, 2.6, matRed); // tunnel east wall near B
-  addBox(17.5, 8, 9, 3, 0.5, matYellow, { y: 3.8, ground: false, map: false }); // tunnel roof slab 1
-  addBox(17.5, -1, 9, 3, 0.5, matYellow, { y: 3.8, ground: false, map: false }); // tunnel roof slab 2
-  addBox(17.5, 4, 3, 0.6, 1.1, matTerra, { ground: false }); // low wall in tunnel
+  // ============ MID — fountain courtyard ============
+  // fountain: stone basin + water + centre column
+  const basin = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.8, 0.7, 16), matWallDark);
+  basin.position.set(0, 0.35, 0);
+  basin.castShadow = true;
+  basin.receiveShadow = true;
+  group.add(basin);
+  const water = new THREE.Mesh(new THREE.CylinderGeometry(1.45, 1.45, 0.1, 16), matWater);
+  water.position.set(0, 0.65, 0);
+  group.add(water);
+  const column = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 1.4, 10), matWallDark);
+  column.position.set(0, 1.2, 0);
+  column.castShadow = true;
+  group.add(column);
+  const topBowl = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.4, 0.25, 12), matWallDark);
+  topBowl.position.set(0, 1.9, 0);
+  group.add(topBowl);
+  colliders.push(new THREE.Box3(
+    new THREE.Vector3(-1.8, 0, -1.8),
+    new THREE.Vector3(1.8, 1.2, 1.8),
+  ));
+  minimapBlocks.push([-1.8, -1.8, 1.8, 1.8]);
+  plant(-4, -5);
+  plant(4, -5);
+  plant(-4, 5);
+  plant(4, 5);
+  // tall bookshelf blocks flanking mid (north + south)
+  bookshelf(-4, -6.5, 3);
+  bookshelf(4, -6.5, 3);
+  bookshelf(-4, 6.5, 3);
+  bookshelf(4, 6.5, 3);
 
-  // --- CONNECTOR (z -2, x -14..14): rotation corridor between the lanes ---
-  addBox(-9, -2, 2.4, 2.4, 2.6, matYellow); // container, connector west
-  addBox(9, -2, 2.4, 2.4, 2.6, matBlue); // container, connector east
-  addBox(0, -2, 1.2, 1.2, 1.2, matWood); // crate, connector centre
+  // ============ LONG A CORRIDOR (west edge, narrow) ============
+  // bookshelves hug the west wall so the walkway stays clear
+  bookshelf(-23.7, -8, 2, Math.PI / 2);
+  bookshelf(-23.7, 8, 2, Math.PI / 2);
+  // B TUNNELS (east edge) — low roof slab makes it feel like a tunnel
+  addBox(23, 4, 2, 21, 0.4, matWoodDark, { y: 3.2, ground: false, shadow: false });
+  bookshelf(23.7, -5, 2, -Math.PI / 2);
+  bookshelf(23.7, 10, 2, -Math.PI / 2);
 
-  // --- SITE A — CRANE BAY (west, x -21..-15, z -13..-7) ---
-  addBox(-18, -11, 1.2, 1.2, 1.2, matWood); // crate in site
-  addBox(-16, -12, 2.4, 2.4, 2.6, matBlue); // container, site A edge
-  // the crane: mast + jib + counter-jib + hook cable
-  addBox(-22.5, -14, 1.4, 1.4, 12, matYellow, { ground: false, map: false });
-  addBox(-20.5, -14, 5, 0.9, 0.9, matYellow, { y: 11.5, ground: false, map: false });
-  addBox(-24, -14, 2.5, 0.8, 0.8, matDark, { y: 11.5, ground: false, map: false });
-  const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 6, 6), matDark);
-  cable.position.set(-18.5, 8.5, -14);
-  group.add(cable);
+  // ============ SIGNS ============
+  function makeSign(text) {
+    const c = document.createElement('canvas');
+    c.width = 512;
+    c.height = 96;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0, 0, 512, 96);
+    ctx.fillStyle = 'rgba(43, 36, 28, 0.85)';
+    ctx.fillRect(0, 0, 512, 96);
+    ctx.fillStyle = '#efe6d0';
+    ctx.font = 'bold 40px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 256, 50);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }
+  // (signs above use makeSign — hoisted as a function declaration)
 
-  // --- SITE B — STACK YARD (east, x 15..21, z -13..-7) ---
-  addBox(18, -11, 2.4, 2.4, 2.6, matGreen); // container, site B
-  addBox(18, -11, 2.4, 2.4, 2.6, matRed, { y: 2.6, ground: false, map: false }); // stacked on top
-  addBox(15.5, -8.5, 1.2, 1.2, 1.2, matWood); // crate in site B
-  addBox(20.5, -8.5, 1.2, 1.2, 1.2, matWood); // crate in site B
-
-  // --- spawn areas: a few crates and a low wall each side ---
-  addBox(-5, 16, 1.2, 1.2, 1.2, matWood);
-  addBox(5, 16, 1.2, 1.2, 1.2, matWood);
-  addBox(0, 17, 4, 0.6, 1.1, matTerra, { ground: false });
-  addBox(-5, -16, 2.4, 2.4, 2.6, matBlue);
-  addBox(5, -16, 1.2, 1.2, 1.2, matWood);
-  addBox(0, -17, 4, 0.6, 1.1, matTerra, { ground: false });
-
-  // --- signs ---
-  const signA = makeSign('CRANE BAY', 'SITE A — LONG HAUL');
-  signA.position.set(-18, 3.4, -13.2);
-  signA.rotation.y = 0;
-  group.add(signA);
-  const signB = makeSign('STACK YARD', 'SITE B — TUNNEL');
-  signB.position.set(18, 3.4, -13.2);
-  group.add(signB);
-  const signMid = makeSign('MID YARD', 'CONTAINER GATE');
-  signMid.position.set(0, 4.6, -0.65);
-  signMid.rotation.y = Math.PI;
-  group.add(signMid);
-
-  // --- nav: named waypoints bots follow (all on open lanes) ---
+  // ============ WAYPOINTS / ROUTES ============
   const waypoints = {
-    atkSpawn: [0, 16], atkLong1: [-18, 12], atkLong2: [-18, 4], atkLong3: [-18, -4], siteA: [-18, -10],
-    atkTun1: [17.5, 12], atkTun2: [17.5, 4], atkTun3: [17.5, -4], siteB: [18, -10],
-    atkMid1: [0, 12], atkMid2: [0, 5], gate: [0, 0], midTop: [0, -6], midA: [-9, -8], midB: [9, -8],
-    defA: [-14, -12], defA2: [-19, -12], defB: [14, -12], defB2: [20, -12], defMid: [0, -13],
-    connW: [-11, -2], connE: [11, -2],
+    atkSpawn: [0, 16],
+    atkSouth1: [0, 13],
+    atkMidSouth: [0, 8],
+    atkMid: [0, -3.5],
+    atkMidNorth: [0, -6],
+    atkLong1: [-23, 12],
+    atkLong2: [-23, 0],
+    atkLong3: [-23, -13],
+    siteA: [-16, 0],
+    atkTun1: [23, 12],
+    atkTun2: [23, 0],
+    atkTun3: [23, -4],
+    siteB: [16, 0],
+    atkMidA: [-8, 0],
+    atkMidB: [8, 0],
+    defA: [-16, -4],
+    defA2: [-19, 4],
+    defB: [16, -4],
+    defB2: [19, 4],
+    defMid: [0, -8],
+    defHall: [0, -14],
+    connW: [-8, -14],
+    connE: [8, -14],
+    southW: [-6, 14],
+    southE: [6, 14],
   };
   const routes = {
-    attackA: ['atkSpawn', 'atkLong1', 'atkLong2', 'atkLong3', 'siteA'],
-    attackB: ['atkSpawn', 'atkTun1', 'atkTun2', 'atkTun3', 'siteB'],
-    attackMidA: ['atkSpawn', 'atkMid1', 'atkMid2', 'gate', 'midTop', 'midA', 'siteA'],
-    attackMidB: ['atkSpawn', 'atkMid1', 'atkMid2', 'gate', 'midTop', 'midB', 'siteB'],
-    defendA: ['defA'],
-    defendB: ['defB'],
-    defendMid: ['defMid'],
-    rotateAtoB: ['midA', 'midTop', 'midB', 'siteB'],
-    rotateBtoA: ['midB', 'midTop', 'midA', 'siteA'],
-    toA: ['midA', 'siteA'],
-    toB: ['midB', 'siteB'],
+    attackA: ['atkSpawn', 'southW', 'atkLong1', 'atkLong2', 'siteA'],
+    attackB: ['atkSpawn', 'southE', 'atkTun1', 'atkTun2', 'siteB'],
+    attackMidA: ['atkSpawn', 'atkSouth1', 'atkMidSouth', 'atkMid', 'atkMidA', 'siteA'],
+    attackMidB: ['atkSpawn', 'atkSouth1', 'atkMidSouth', 'atkMid', 'atkMidB', 'siteB'],
+    defendA: ['defHall', 'defMid', 'atkMidA', 'defA'],
+    defendB: ['defHall', 'defMid', 'atkMidB', 'defB'],
+    defendMid: ['defHall', 'defMid', 'atkMid'],
+    rotateAtoB: ['defA', 'atkMidA', 'atkMid', 'atkMidB', 'defB'],
+    rotateBtoA: ['defB', 'atkMidB', 'atkMid', 'atkMidA', 'defA'],
+    toA: ['atkMid', 'atkMidA', 'siteA'],
+    toB: ['atkMid', 'atkMidB', 'siteB'],
   };
-
   const sites = {
-    A: { minX: -21, maxX: -15, minZ: -13, maxZ: -7, x: -18, z: -10, name: 'CRANE BAY' },
-    B: { minX: 15, maxX: 21, minZ: -13, maxZ: -7, x: 18, z: -10, name: 'STACK YARD' },
+    A: { minX: -22, maxX: -11, minZ: -7, maxZ: 7, x: -16.5, z: 0, name: 'STUDY ROOM' },
+    B: { minX: 11, maxX: 22, minZ: -7, maxZ: 7, x: 16.5, z: 0, name: 'ARCHIVE ROOM' },
   };
-
   const spawns = {
     attack: [[-4, 16], [-2, 17], [0, 16], [2, 17], [4, 16]],
-    defend: [[-14, -15], [-7, -16], [0, -15], [7, -16], [14, -15]],
+    defend: [[-8, -15], [-4, -16], [0, -15], [4, -16], [8, -15]],
   };
 
-  // --- areas: HUD callout when the player walks into one ---
-  const areas = [
-    { name: 'LONG HAUL', minX: -23, maxX: -13, minZ: -14, maxZ: 15 },
-    { name: 'TUNNEL', minX: 13, maxX: 23, minZ: -14, maxZ: 15 },
-    { name: 'MID YARD', minX: -6, maxX: 6, minZ: -14, maxZ: 15 },
-    { name: 'CRANE BAY', minX: -23, maxX: -13, minZ: -14, maxZ: -7 },
-    { name: 'STACK YARD', minX: 13, maxX: 23, minZ: -14, maxZ: -7 },
-    { name: 'CONNECTOR', minX: -13, maxX: 13, minZ: -4, maxZ: 0 },
-    { name: 'ATTACK SPAWN', minX: -8, maxX: 8, minZ: 13, maxZ: 18 },
-    { name: 'DEFEND SPAWN', minX: -8, maxX: 8, minZ: -18, maxZ: -13 },
-  ];
   function areaAt(x, z) {
-    // sites first (they overlap their lane), then lanes, then spawns
-    for (const a of areas) {
-      if (a.name === 'CRANE BAY' || a.name === 'STACK YARD') {
-        if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) return a.name;
-      }
-    }
-    for (const a of areas) {
-      if (a.name === 'LONG HAUL' || a.name === 'TUNNEL' || a.name === 'MID YARD') {
-        if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) return a.name;
-      }
-    }
-    for (const a of areas) {
-      if (x >= a.minX && x <= a.maxX && z >= a.minZ && z <= a.maxZ) return a.name;
-    }
-    return 'YARD';
+    if (x >= -22 && x <= -11 && z >= -7 && z <= 7) return 'STUDY ROOM';
+    if (x >= 11 && x <= 22 && z >= -7 && z <= 7) return 'ARCHIVE ROOM';
+    if (x >= -13 && x <= 13 && z >= -18 && z <= -10) return 'MAIN READING HALL';
+    if (x >= -24 && x <= -22) return 'LONG A CORRIDOR';
+    if (x >= 22 && x <= 24 && z >= -7 && z <= 14) return 'B TUNNELS';
+    if (z >= 12 && z <= 18) return 'ENTRANCE LOBBY';
+    if (x >= -6 && x <= 6 && z >= -8 && z <= 8) return 'MID';
+    if (z >= -2 && z <= 2 && x >= -11 && x <= 11) return 'CONNECTING HALLWAY';
+    return 'LIBRARY';
   }
 
   const minimap = {

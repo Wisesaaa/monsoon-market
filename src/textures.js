@@ -238,7 +238,64 @@ export function radialSprite(inner, outer) {
   return tex;
 }
 
-// --- gradient sky dome texture (sunset: deep blue top -> orange horizon) ---
+// --- bookshelf front: rows of coloured book spines ---
+export function booksTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#5f3d22';
+  ctx.fillRect(0, 0, 256, 256);
+  const cols = ['#a34a3a', '#3e6b8c', '#4d7a5a', '#c98f2e', '#efe6d0', '#7a5230', '#6b4a6b', '#2b4a3a'];
+  const rng = seeded(11);
+  // 4 shelves
+  for (let s = 0; s < 4; s += 1) {
+    const y0 = 8 + s * 64;
+    // shelf board
+    ctx.fillStyle = '#4a2f18';
+    ctx.fillRect(0, y0 + 52, 256, 6);
+    let x = 4;
+    while (x < 250) {
+      const w = 10 + rng() * 14;
+      const h = 34 + rng() * 16;
+      const col = cols[Math.floor(rng() * cols.length)];
+      ctx.fillStyle = col;
+      ctx.fillRect(x, y0 + 54 - h, w, h);
+      // spine line
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.fillRect(x, y0 + 54 - h, 2, h);
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(x + w - 3, y0 + 54 - h, 2, h);
+      x += w + 1 + rng() * 3;
+      if (rng() < 0.12) x += 10; // occasional gap / leaning book
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+// --- checkerboard floor (lobby) ---
+export function checkerTexture() {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+  const n = 8;
+  const s = 256 / n;
+  for (let y = 0; y < n; y += 1) {
+    for (let x = 0; x < n; x += 1) {
+      ctx.fillStyle = (x + y) % 2 === 0 ? '#e8dcc0' : '#8a6a4a';
+      ctx.fillRect(x * s, y * s, s, s);
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(4, 3);
+  return tex;
+}
 export function skyTexture() {
   const c = document.createElement('canvas');
   c.width = 4;
@@ -268,5 +325,7 @@ export function makeTextures() {
     containerGreen: containerTexture('#4d7a5a', 59),
     containerRed: containerTexture('#a34a3a', 61),
     containerYellow: containerTexture('#c98f2e', 67),
+    books: booksTexture(),
+    checker: checkerTexture(),
   };
 }

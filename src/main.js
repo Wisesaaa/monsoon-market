@@ -634,61 +634,61 @@ function runShot(name) {
   if (name !== 'buy') setWeapon(player, 'longhaul');
 
   if (name === 'cover') {
-    // firefight through the container gate, mid yard
-    placeActor(player, 0, 10, Math.PI);
+    // firefight across the mid fountain courtyard
+    placeActor(player, 0, 8, Math.PI);
     player.money = 2350;
     G.stormcell.carrierId = 'you';
-    placeActor(defenders[0], 0, -4, 0);
-    placeActor(defenders[1], -8, -6, -Math.PI / 2);
-    placeActor(attackers[0], -3, 8, Math.PI);
-    radio('Rani', 'Contact mid — two pushing the gate');
+    placeActor(defenders[0], 0, -3.5, 0);
+    placeActor(defenders[1], 4, -4, -Math.PI / 2);
+    placeActor(attackers[0], -3, 6, Math.PI);
+    radio('Rani', 'Contact mid — two pushing the fountain');
     settle(8);
-    aimAt(new THREE.Vector3(0, 1.3, -4));
+    aimAt(new THREE.Vector3(0, 1.3, -3.5));
     playerShoot();
     settle(4);
-    drawTracerTo(new THREE.Vector3(0, 1.3, -4));
+    drawTracerTo(new THREE.Vector3(0, 1.3, -3.5));
   } else if (name === 'buy') {
     G.phase = 'freeze';
     G.timer = 6;
-    placeActor(player, 0, 14, Math.PI);
+    placeActor(player, 0, 16, Math.PI);
     player.money = 2350;
     hud.showBuy(true, player.money);
     hud.setBuyAfford(player.money);
     settle(20);
-    aimAt(new THREE.Vector3(0, 1.6, 0));
+    aimAt(new THREE.Vector3(0, 1.6, 8));
   } else if (name === 'mid') {
-    // long haul sightline: the whole west lane in one frame
-    placeActor(player, -18, 12, Math.PI);
+    // long A corridor: the whole west lane in one frame
+    placeActor(player, -23, 12, Math.PI);
     player.money = 1850;
     G.stormcell.carrierId = 'you';
-    placeActor(defenders[0], -18, -2, 0);
-    placeActor(defenders[1], -14, -6, -Math.PI / 2);
-    placeActor(attackers[0], -16, 8, Math.PI);
-    radio('Sari', 'One long — holding the haul');
+    placeActor(defenders[0], -23, -2, 0);
+    placeActor(defenders[1], -23, -8, -Math.PI / 2);
+    placeActor(attackers[0], -23, 6, Math.PI);
+    radio('Sari', 'One long — holding the corridor');
     settle(6);
-    aimAt(new THREE.Vector3(-18, 1.3, -2));
+    aimAt(new THREE.Vector3(-23, 1.3, -2));
     playerShoot();
     settle(4);
-    drawTracerTo(new THREE.Vector3(-18, 1.3, -2));
+    drawTracerTo(new THREE.Vector3(-23, 1.3, -2));
   } else if (name === 'site') {
-    // charge planted at B, defender defusing, player pushing up the tunnel
+    // charge planted at B (archive room), defender defusing, player pushing up the B tunnel
     G.stormcell.planted = true;
     G.stormcell.site = 'B';
     G.stormcell.fuse = 37;
     G.phase = 'planted';
-    placeActor(player, 17.5, 2, Math.PI);
+    placeActor(player, 23, 0, Math.PI);
     player.money = 3200;
-    placeActor(defenders[0], 18, -10, 0);
+    placeActor(defenders[0], 16, 0, 0);
     defenders[0].state = 'defuse';
-    placeActor(defenders[1], 15, -6, -Math.PI / 2);
-    placeActor(attackers[0], 17.5, 6, Math.PI);
+    placeActor(defenders[1], 14, -4, -Math.PI / 2);
+    placeActor(attackers[0], 23, 6, Math.PI);
     hud.showBanner('CHARGE PLANTED', 'Site B — 37 seconds on the fuse', 60000);
-    radio('YOU', 'Charge planted at B — hold the yard');
+    radio('YOU', 'Charge planted at B — hold the archive');
     settle(6);
-    aimAt(new THREE.Vector3(18, 1.3, -10));
+    aimAt(new THREE.Vector3(16, 1.3, 0));
     playerShoot();
     settle(4);
-    drawTracerTo(new THREE.Vector3(18, 1.3, -10));
+    drawTracerTo(new THREE.Vector3(16, 1.3, 0));
   }
   syncCamera();
   syncWeaponHud();
