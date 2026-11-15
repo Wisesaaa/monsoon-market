@@ -207,3 +207,20 @@ Yang DIKEEP dari iterasi Yardline/AAA/rifle: rifle two-tone AR (buildRifle, blac
 Yang diperbaiki saat restore: areaAt() ditambahkan ke map.js (SPICE ROW / LANTERN COURT / FISH LANE / A LONG / B LONG / MARKET ENTRANCE / NORTH STALLS), runShot staging balik ke koordinat Monsoon Market, id senjata dikembalikan (monsoon/drizzle/longrain/stallbreaker), nama tim di top bar + matchEnd (RAIN/STALL), overlay copy + README balik ke Monsoon Market.
 Tes: 4 capture staged, nol error. Dossier 136.941 byte (headroom ~26,9 KB untuk upgrade).
 Yang masih jelek: ini baru restore — upgrade 11 item (nav/hearing/collide/viewmodel/player/bots/ADS/plant zone/scoreboard) belum dimulai. 60 FPS + pointer lock masih belum terverifikasi di desktop Chrome asli. TIDAK di-submit (hold: Yiro preview dulu, baru dia bilang "gas entry").
+
+## Iterasi 6 — upgrade dari verdict juri (16 Nov ~01:00 WIB, belum di-submit)
+Yiro kirim 20 verdict juri (6 menang, 12 seri, 2 kalah) untuk Monsoon Market submission 2. Kelemahan yang juri ulang-ulang: player.js tipis (114 baris), bots.js tipis (409 baris), tidak ada nav/hearing/collide/viewmodel, tidak ada ADS, tidak ada damage scoreboard, tidak ada plant zone ditandai, HUD tidak nunjukin tombol walk/crouch/plant. Kekuatan yang tetap dijaga: neon night palette, Stormcell, buy menu + 3 granat, callout bot ber-nama, originalitas.
+Yang dibangun (semua kode ditulis sendiri di sesi ini):
+- nav.js (115 baris, baru): waypoint graph + route following (steerToward, followRoute, rotationRoute, attackRoute, nearestWaypoint). bots.js pakai nav.followRoute, main.js pakai nav.rotationRoute untuk rotasi defender.
+- hearing.js (68 baris, baru): sistem suara (gunshot 26m, plant/defuse 20m, grenade 30m, footstep run 14m / walk 8m / crouch 4m; hear() cari noise terdekat, decay() hapus yang kadaluarsa). main.js bikin hearing dari G.noises; bots pakai hearing.hear() + hearing.emit().
+- collide.js (72 baris, baru): solver collision AABB (overlaps, moveAxis per-sumbu biar geser di tembok, applyGravity + landing, jump). player.js pakai collide.js.
+- viewmodel.js (300 baris, baru): viewmodel senjata (buildRifle two-tone AR dari referensi Yiro + SMG/pistol/DMR/shotgun/knife), animasi sway/bob/recoil/reload/switch, muzzle flash sprite+light, ADS (posisi tengah, sway/bob mengecil, spread x0.45). weapons.js jadi tipis (firing logic saja) dan pakai viewmodel.js.
+- player.js diperdalam (114 → 131 baris): mode walk (Shift, 2.8 m/s, senyap) / run (5.2) / sprint (W lurus, 6.4, berisik) / crouch (Ctrl, 2.4, senyap), landing detection (landed + landSpeed), stepNoiseKind() + speedNorm().
+- bots.js diperdalam (409 → 521 baris): investigate (bot jalan ke arah suara tembakan dekat), retreat (HP < 30 mundur ke holdPos, 2.5 detik), hold angle (bot jaga arah lane, scan kecil), warna tim balik ke pink/cyan Monsoon Market, plan "B RUSH — 4 B long, 1 mid".
+- ADS: klik kanan aim (input.js state.aiming + contextmenu dicegah), FOV 74 → 55 saat aim, gerak melambat ke walk, spread mengecil (viewmodel adsSpreadMult).
+- HUD footer: #controls di bawah layar (WASD, SHIFT walk, CTRL crouch, SPACE jump, RIGHT CLICK aim, R reload, E plant/defuse, B buy, 1/2/3 weapons).
+- Damage scoreboard: damage() catat damageDealt/damageTaken per aktor; round-end overlay nunjukin 5 besar damage.
+- Plant zone ditandai: outline menyala di tanah site A (amber) dan site B (cyan).
+- Overlay title diperbaiki: "MONSOON MARKET" (sebelumnya masih "YARDLINE" dari iterasi lama).
+Tes: 4 capture staged, nol error. Dossier 156.436 byte (cap 163.840 — headroom cuma ~7,4 KB, hati-hati nambah kode). Plant zone cyan kelihatan di site shot; footer controls kelihatan.
+Yang masih jelek: dossier hampir penuh (kalau nambah fitur besar, harus trim kode mati/komentar dulu); 60 FPS + pointer lock masih belum terverifikasi di desktop Chrome asli; ADS belum bisa dites klik kanan di Xvfb (pointer lock tidak engage). TIDAK di-submit (hold: Yiro preview dulu, baru dia bilang "gas entry").

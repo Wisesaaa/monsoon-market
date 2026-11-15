@@ -113,6 +113,7 @@
   #plant-fill { height: 6px; background: var(--amber); border-radius: 3px; width: 0%; transition: width 80ms linear; }
 
   #carry { position: fixed; left: 50%; bottom: 150px; transform: translateX(-50%); padding: 6px 14px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; color: #1a0d02; background: var(--amber); border-radius: var(--radius); }
+  #controls { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); font-family: var(--font-readout); font-size: 10px; letter-spacing: 0.05em; color: var(--muted); background: rgba(18, 4, 12, 0.55); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 4px 10px; max-width: 96vw; text-align: center; }
 
   #buy { position: fixed; left: 50%; bottom: 190px; transform: translateX(-50%); width: 560px; padding: 14px 16px; }
   #buy h2 { margin: 0 0 4px; font-size: 14px; letter-spacing: 0.12em; }
@@ -163,6 +164,7 @@
   <div id="banner" class="panel" hidden><div id="banner-title"></div><div id="banner-sub"></div></div>
   <div id="plant-bar" class="panel" hidden><div id="plant-label"></div><div id="plant-fill"></div></div>
   <div id="carry" hidden>◆ CARRYING THE CHARGE — TAKE IT TO A OR B</div>
+  <div id="controls">WASD move · SHIFT walk (quiet) · CTRL crouch · SPACE jump · RIGHT CLICK aim · R reload · E plant / defuse · B buy · 1/2/3 weapons</div>
   <div id="vitals">
     <div class="vital panel"><label>HEALTH</label><b id="hp-value">100</b><div class="bar"><i id="hp-bar"></i></div></div>
     <div class="vital panel"><label>ARMOUR</label><b id="armor-value">0</b><div class="bar"><i id="armor-bar"></i></div></div>
@@ -187,7 +189,7 @@
 
 <div id="overlay" class="overlay">
   <section class="panel-card" role="dialog" aria-modal="true" aria-labelledby="overlay-title">
-    <h1 id="overlay-title">YARD<span>LINE</span></h1>
+    <h1 id="overlay-title">MONSOON<span>MARKET</span></h1>
     <p id="overlay-copy">Rain-slicked night market. 5v5, plant the Stormcell, first to 7. Click to play.</p>
     <button id="play" type="button">Click to play</button>
     <ul class="keys">

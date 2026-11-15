@@ -1,29 +1,31 @@
-// Yardline — the bots. Nine of them: four teammates, five opponents.
+// Monsoon Market — the bots. Nine of them: four teammates, five opponents.
 // Each has a name, a role and a route. Attackers follow a team plan to a site
 // (and the carrier plants); defenders hold a site, listen, and rotate on
 // contact or on a plant. They see with a cone + line of sight, hear gunshots,
 // and shoot in bursts with a reaction time — never instantly, never perfectly.
+// Routes come from nav.js (the waypoint graph); sounds come from hearing.js
+// (the noise system) — this file owns decisions, not the map or the ears.
 import * as THREE from 'three';
 import { WEAPONS, BOT_NAMES, ECONOMY } from './state.js';
 import { createBody } from './player.js';
 import { createWeaponInstance } from './weapons.js';
+import { createNav } from './nav.js';
 
 const VISION_RANGE = 42;
 const VISION_HALF_ANGLE = 1.05;
-const HEAR_RADIUS = 26;
 const BOT_SPEED_KEY = 5.2;
 
 const PLANS = [
   { id: 'splitA', text: 'SPLIT A — 3 long, 2 mid', site: 'A', routes: ['attackA', 'attackA', 'attackMidA', 'attackMidA', 'attackA'] },
-  { id: 'rushB', text: 'B RUSH — 4 tunnel, 1 mid', site: 'B', routes: ['attackB', 'attackB', 'attackB', 'attackMidB', 'attackB'] },
+  { id: 'rushB', text: 'B RUSH — 4 B long, 1 mid', site: 'B', routes: ['attackB', 'attackB', 'attackB', 'attackMidB', 'attackB'] },
   { id: 'midA', text: 'MID CONTROL — take mid, hit A', site: 'A', routes: ['attackMidA', 'attackMidA', 'attackMidA', 'attackA', 'attackB'] },
 ];
 
 function bodyColor(team) {
-  return team === 'attack' ? new THREE.Color('#6b4a2f') : new THREE.Color('#2f4a5c');
+  return team === 'attack' ? new THREE.Color('#7a2438') : new THREE.Color('#1f4d5c');
 }
 function trimColor(team) {
-  return team === 'attack' ? new THREE.Color('#c96a3b') : new THREE.Color('#3e6b8c');
+  return team === 'attack' ? new THREE.Color('#ff2e88') : new THREE.Color('#22d3ee');
 }
 
 function makeBotMesh(team) {
@@ -138,6 +140,8 @@ function losBlocked(from, to, colliders) {
 export function createBots(scene, map, mover, G) {
   const bots = [];
   const hitMeshes = [];
+  // nav owns the waypoint graph: routes, steering, rotations.
+  const nav = createNav(map);
   const random = (() => {
     let s = 1234567;
     return () => {
@@ -173,7 +177,11 @@ export function createBots(scene, map, mover, G) {
       routeIndex: 0,
       holdPos: null,
       watchYaw: 0,
-      state: 'advance',
+      state: 'advance', // advance | hold | investigate | retreat | plant | defuse
+      investigatePos: null, // [x, z] of a sound the bot is walking to check
+      investigateAt: 0,
+      retreatAt: 0, // when the bot started falling back (hp < 30)
+      retreatFrom: null, // { x, z } of the enemy it is running from
       target: null,
       lastSeen: null,
       lastSeenAt: -99,
@@ -291,27 +299,15 @@ export function createBots(scene, map, mover, G) {
     return !losBlocked(eyePos, targetPos, colliders);
   }
 
+  // Steer a body toward a point. Kept here as a thin wrapper over nav so
+  // the rest of the file reads the same; nav owns the turning math.
   function keysToward(bot, tx, tz) {
-    const dx = tx - bot.body.position.x;
-    const dz = tz - bot.body.position.z;
-    const dist = Math.hypot(dx, dz);
-    if (dist < 0.4) return false;
-    const wantYaw = Math.atan2(-dx, -dz);
-    let dyaw = wantYaw - bot.body.yaw;
-    while (dyaw > Math.PI) dyaw -= Math.PI * 2;
-    while (dyaw < -Math.PI) dyaw += Math.PI * 2;
-    bot.body.yaw += Math.max(-0.12, Math.min(0.12, dyaw));
-    const k = bot.keys;
-    k.clear();
-    if (Math.abs(dyaw) < 0.6) k.add('KeyW');
-    else if (dyaw > 0) k.add('KeyA');
-    else k.add('KeyD');
-    return true;
+    return !nav.steerToward(bot.body, tx, tz, bot.keys);
   }
 
   function stepBot(bot, dt, ctx) {
     if (!bot.alive) return;
-    const { G, colliders, damage, tracer, noise, radio, time } = ctx;
+    const { G, colliders, damage, tracer, hearing, radio, time } = ctx;
     bot.visionAt -= dt;
     bot.weapon.step(dt);
 
@@ -344,17 +340,28 @@ export function createBots(scene, map, mover, G) {
       }
     }
 
-    // --- hear gunshots ---
-    if (!bot.target) {
-      for (const n of G.noises) {
-        const d = Math.hypot(n.x - bot.body.position.x, n.z - bot.body.position.z);
-        if (d < n.radius && bot.state === 'hold') {
-          bot.watchYaw = Math.atan2(-(n.x - bot.body.position.x), -(n.z - bot.body.position.z));
+    // --- hear a sound ---
+    // hearing.js returns the loudest fresh noise in range. A bot holding a
+    // site turns toward it and calls it out; a bot on the move peels off
+    // its route to investigate close gunfire.
+    if (!bot.target && hearing) {
+      const heard = hearing.hear(bot.body.position.x, bot.body.position.z);
+      if (heard) {
+        const yaw = Math.atan2(-(heard.x - bot.body.position.x), -(heard.z - bot.body.position.z));
+        if (bot.state === 'hold') {
+          bot.watchYaw = yaw;
           if (time - bot.radioAt > 10) {
             bot.radioAt = time;
-            radio(bot, 'Heard shots — checking');
+            radio(bot, heard.kind === 'gunshot' ? 'Heard shots — checking' : `Heard ${heard.kind} — checking`);
           }
-          break;
+        } else if (bot.state === 'advance' && heard.kind === 'gunshot' && heard.dist < 12) {
+          bot.state = 'investigate';
+          bot.investigatePos = [heard.x, heard.z];
+          bot.investigateAt = time;
+          if (time - bot.radioAt > 10) {
+            bot.radioAt = time;
+            radio(bot, 'Shots close by — checking it out');
+          }
         }
       }
     }
@@ -364,6 +371,17 @@ export function createBots(scene, map, mover, G) {
       const t = bot.target;
       const dx = t.body.position.x - bot.body.position.x;
       const dz = t.body.position.z - bot.body.position.z;
+      // retreat: a hurt bot (under 30 HP) falls back toward its hold
+      // position instead of trading — it lives to hold the next angle.
+      if (bot.hp < 30 && bot.state !== 'retreat' && Math.hypot(dx, dz) < 14) {
+        bot.state = 'retreat';
+        bot.retreatAt = time;
+        bot.retreatFrom = { x: t.body.position.x, z: t.body.position.z };
+        if (time - bot.radioAt > 8) {
+          bot.radioAt = time;
+          radio(bot, 'Hurt — falling back');
+        }
+      }
       bot.body.yaw = Math.atan2(-dx, -dz);
       bot.keys.clear();
       bot.reaction -= dt;
@@ -393,7 +411,7 @@ export function createBots(scene, map, mover, G) {
             ? new THREE.Vector3(t.body.position.x, t.body.position.y + (head ? 1.62 : 1.2), t.body.position.z)
             : new THREE.Vector3(t.body.position.x + (random() - 0.5) * 2.4, t.body.position.y + 1.2 + (random() - 0.5) * 1.6, t.body.position.z + (random() - 0.5) * 2.4);
           tracer(from, to);
-          noise(bot.body.position.x, bot.body.position.z, HEAR_RADIUS);
+          if (hearing) hearing.emit(bot.body.position.x, bot.body.position.z, 'gunshot');
           if (hit) {
             let dmg = bot.weapon.def.damage * (head ? bot.weapon.def.headMult : 1);
             if (t.armor > 0) dmg *= 0.6;
@@ -421,22 +439,49 @@ export function createBots(scene, map, mover, G) {
       return;
     }
 
-    // --- move along the route ---
+    // --- retreat: run from the enemy that hurt the bot, toward the hold
+    // position (or the spawn). Ends after 2.5s or on reaching safety.
+    if (bot.state === 'retreat') {
+      const from = bot.retreatFrom || { x: bot.body.position.x, z: bot.body.position.z };
+      const awayX = bot.body.position.x + (bot.body.position.x - from.x);
+      const awayZ = bot.body.position.z + (bot.body.position.z - from.z);
+      keysToward(bot, awayX, awayZ);
+      mover.stepBody(bot.body, dt, bot.keys);
+      bot.walkPhase += dt * Math.hypot(bot.body.velocity.x, bot.body.velocity.z);
+      syncMesh(bot);
+      if (time - bot.retreatAt > 2.5 || bot.hp > 60) {
+        bot.state = bot.team === 'attack' ? 'advance' : 'hold';
+        bot.target = null;
+      }
+      return;
+    }
+
+    // --- move along the route (nav.js owns the waypoint graph) ---
     if (bot.state === 'advance' && bot.route) {
-      const route = map.routes[bot.route];
-      if (route && bot.routeIndex < route.length) {
-        const wp = map.waypoints[route[bot.routeIndex]];
-        const arrived = !keysToward(bot, wp[0], wp[1]);
-        if (arrived) bot.routeIndex += 1;
-      } else {
+      const next = nav.followRoute(bot);
+      if (next < 0) {
         bot.state = 'hold';
         bot.holdPos = [bot.body.position.x, bot.body.position.z];
         bot.watchYaw = bot.body.yaw;
       }
+    } else if (bot.state === 'investigate' && bot.investigatePos) {
+      // walk to the sound that pulled the bot off its route
+      const arrived = !keysToward(bot, bot.investigatePos[0], bot.investigatePos[1]);
+      if (arrived || time - bot.investigateAt > 6) {
+        // nothing there, or waited long enough: back to the route
+        bot.state = 'advance';
+        bot.investigatePos = null;
+      }
     } else if (bot.state === 'hold') {
       bot.keys.clear();
-      // slow scan
-      bot.body.yaw += Math.sin(time * 0.5 + bot.id.charCodeAt(3)) * 0.002;
+      // hold an angle: face the lane the bot is watching, with only a
+      // small scan so the crosshair stays near the entrance.
+      const targetYaw = bot.watchYaw || 0;
+      let dyaw = targetYaw - bot.body.yaw;
+      while (dyaw > Math.PI) dyaw -= Math.PI * 2;
+      while (dyaw < -Math.PI) dyaw += Math.PI * 2;
+      bot.body.yaw += dyaw * Math.min(1, dt * 3);
+      bot.body.yaw += Math.sin(time * 0.5 + bot.id.charCodeAt(3)) * 0.001;
     }
     mover.stepBody(bot.body, dt, bot.keys);
     bot.walkPhase += dt * Math.hypot(bot.body.velocity.x, bot.body.velocity.z);
@@ -465,6 +510,7 @@ export function createBots(scene, map, mover, G) {
   return {
     bots,
     hitMeshes,
+    nav,
     assignRound,
     respawnAll,
     stepBot,
