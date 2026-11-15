@@ -12,6 +12,8 @@ const STEEL = new THREE.MeshStandardMaterial({ color: new THREE.Color('#4a4e57')
 const STEEL_DARK = new THREE.MeshStandardMaterial({ color: new THREE.Color('#33373e'), roughness: 0.5, metalness: 0.6, emissive: new THREE.Color('#1c1f24'), emissiveIntensity: 0.7 });
 const WOOD = new THREE.MeshStandardMaterial({ color: new THREE.Color('#7a5230'), roughness: 0.75, metalness: 0.05, emissive: new THREE.Color('#2a1a0c'), emissiveIntensity: 0.5 });
 const WOOD_DARK = new THREE.MeshStandardMaterial({ color: new THREE.Color('#5f3d22'), roughness: 0.8, metalness: 0.05, emissive: new THREE.Color('#20140a'), emissiveIntensity: 0.5 });
+const TAN = new THREE.MeshStandardMaterial({ color: new THREE.Color('#8a7a5c'), roughness: 0.75, metalness: 0.05, emissive: new THREE.Color('#2a241a'), emissiveIntensity: 0.5 });
+const TAN_DARK = new THREE.MeshStandardMaterial({ color: new THREE.Color('#6b5d45'), roughness: 0.8, metalness: 0.05, emissive: new THREE.Color('#1e1810'), emissiveIntensity: 0.5 });
 const GLOVE = new THREE.MeshStandardMaterial({ color: new THREE.Color('#6b5a3a'), roughness: 0.9, metalness: 0, emissive: new THREE.Color('#1e180c'), emissiveIntensity: 0.5 });
 const BRASS = new THREE.MeshStandardMaterial({ color: new THREE.Color('#c9a227'), roughness: 0.35, metalness: 0.9 });
 const POLYMER = new THREE.MeshStandardMaterial({ color: new THREE.Color('#23262b'), roughness: 0.7, metalness: 0.2 });
@@ -34,41 +36,69 @@ function cyl(r, len, mat, x = 0, y = 0, z = 0, rx = Math.PI / 2) {
 // --- viewmodel builders: each returns { group, muzzle } where muzzle is the
 // local position of the barrel tip (camera space, model at its base pose). ---
 function buildRifle() {
+  // LONGHAUL AR rebuilt from Yiro's reference sheet (AR-15 carbine, two-tone
+  // black + tan/FDE): long M-LOK handguard, holographic red-dot, tan
+  // vertical foregrip, curved tan mag, collapsible tan stock, birdcage
+  // flash hider. Built pointing -z; the muzzle is at z = -0.72.
   const g = new THREE.Group();
+  // receiver (black) + ejection port + selector + charging handle
   g.add(box(0.09, 0.11, 0.42, STEEL_DARK)); // receiver
-  g.add(cyl(0.02, 0.52, STEEL, 0, 0.02, -0.44)); // long barrel
-  g.add(box(0.08, 0.09, 0.3, WOOD, 0, -0.015, -0.32)); // wooden handguard
-  g.add(box(0.05, 0.03, 0.12, WOOD_DARK, 0, 0.045, -0.3)); // handguard top rail
-  // top rail: thin strip with slots along the receiver + handguard
-  g.add(box(0.04, 0.015, 0.5, STEEL_DARK, 0, 0.062, -0.18));
-  for (let i = 0; i < 6; i += 1) {
-    g.add(box(0.045, 0.018, 0.012, STEEL, 0, 0.062, -0.38 + i * 0.07));
+  g.add(box(0.095, 0.04, 0.12, STEEL, 0.0, 0.02, -0.02)); // ejection port (right side)
+  g.add(box(0.02, 0.02, 0.05, STEEL, 0.055, 0.0, 0.06)); // fire selector
+  g.add(box(0.06, 0.02, 0.02, STEEL, 0, 0.06, 0.2)); // charging handle (T)
+  // long barrel + birdcage flash hider (cylinder with slots)
+  g.add(cyl(0.02, 0.52, STEEL, 0, 0.02, -0.44));
+  g.add(cyl(0.026, 0.07, STEEL_DARK, 0, 0.02, -0.7));
+  g.add(box(0.056, 0.02, 0.05, STEEL, 0, 0.02, -0.7)); // flash hider slots
+  // M-LOK handguard (black, free-float) with side slots + top rail
+  g.add(box(0.085, 0.1, 0.34, STEEL_DARK, 0, -0.01, -0.34));
+  for (let i = 0; i < 4; i += 1) {
+    // M-LOK slots on both sides
+    g.add(box(0.005, 0.02, 0.06, STEEL, 0.044, -0.01, -0.46 + i * 0.08));
+    g.add(box(0.005, 0.02, 0.06, STEEL, -0.044, -0.01, -0.46 + i * 0.08));
   }
-  // red-dot sight: housing + ring + glowing dot, on the rail
-  g.add(box(0.05, 0.06, 0.07, STEEL_DARK, 0, 0.1, 0.02));
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.008, 8, 20), STEEL);
-  ring.position.set(0, 0.1, 0.02);
-  g.add(ring);
-  const dot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8),
+  // top rail: thin strip with slots along receiver + handguard
+  g.add(box(0.04, 0.015, 0.56, STEEL_DARK, 0, 0.062, -0.2));
+  for (let i = 0; i < 7; i += 1) {
+    g.add(box(0.045, 0.018, 0.012, STEEL, 0, 0.062, -0.44 + i * 0.07));
+  }
+  // holographic red-dot sight (boxy housing + round lens + hood)
+  g.add(box(0.06, 0.07, 0.09, STEEL_DARK, 0, 0.11, 0.0)); // sight housing
+  g.add(box(0.05, 0.05, 0.01, STEEL, 0, 0.11, -0.05)); // lens hood (front)
+  const lens = new THREE.Mesh(new THREE.CircleGeometry(0.02, 16),
     new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff2e1e') }));
-  dot.position.set(0, 0.1, 0.02);
-  g.add(dot);
-  // vertical foregrip under the handguard
-  g.add(box(0.045, 0.11, 0.05, POLYMER, 0, -0.1, -0.38, 0.1));
-  // charging handle on the side
-  g.add(box(0.02, 0.02, 0.06, STEEL, 0.055, 0.02, 0.1));
-  // curved magazine: three segments, each tilted a little more
-  g.add(box(0.05, 0.13, 0.07, STEEL, 0, -0.11, -0.04, 0.12));
-  g.add(box(0.05, 0.12, 0.07, STEEL, 0, -0.2, -0.09, 0.32));
-  g.add(box(0.05, 0.1, 0.06, STEEL, 0, -0.27, -0.15, 0.55));
-  g.add(box(0.07, 0.1, 0.24, WOOD, 0, -0.02, 0.3, -0.06)); // wooden stock
-  g.add(box(0.06, 0.13, 0.07, POLYMER, 0, -0.11, 0.12, 0.35)); // pistol grip
-  g.add(box(0.02, 0.05, 0.02, STEEL, 0, 0.085, -0.66)); // front sight post
-  g.add(box(0.015, 0.03, 0.1, STEEL_DARK, 0, -0.06, 0.02)); // trigger guard
-  g.add(cyl(0.024, 0.06, STEEL_DARK, 0, 0.02, -0.7)); // muzzle nut
+  lens.position.set(0, 0.11, -0.056);
+  lens.rotation.y = Math.PI;
+  g.add(lens);
+  g.add(box(0.03, 0.02, 0.03, STEEL, 0, 0.15, 0.0)); // sight top knob
+  // vertical foregrip (tan, stubby, ribbed) under the handguard
+  g.add(box(0.045, 0.11, 0.05, TAN, 0, -0.11, -0.38, 0.08));
+  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.09, -0.38, 0.08)); // rib 1
+  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.12, -0.38, 0.08)); // rib 2
+  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.15, -0.38, 0.08)); // rib 3
+  // curved tan magazine (three segments, each tilted a little more)
+  g.add(box(0.05, 0.13, 0.07, TAN, 0, -0.11, -0.04, 0.12));
+  g.add(box(0.05, 0.12, 0.07, TAN, 0, -0.2, -0.09, 0.32));
+  g.add(box(0.05, 0.1, 0.06, TAN, 0, -0.27, -0.15, 0.55));
+  g.add(box(0.055, 0.02, 0.075, TAN_DARK, 0, -0.31, -0.18, 0.55)); // mag baseplate
+  // collapsible tan stock: cheek riser + butt plate + sling loop
+  g.add(box(0.07, 0.08, 0.2, TAN, 0, 0.0, 0.3)); // stock body
+  g.add(box(0.07, 0.03, 0.22, TAN_DARK, 0, 0.045, 0.3)); // cheek riser
+  g.add(box(0.075, 0.12, 0.03, TAN_DARK, 0, -0.01, 0.41)); // butt plate
+  g.add(box(0.02, 0.05, 0.02, STEEL_DARK, 0, -0.08, 0.4)); // sling loop
+  g.add(box(0.05, 0.02, 0.1, STEEL_DARK, 0, -0.05, 0.26)); // buffer tube
+  // pistol grip (tan, angled, beavertail)
+  g.add(box(0.06, 0.13, 0.07, TAN, 0, -0.11, 0.12, 0.35));
+  g.add(box(0.065, 0.03, 0.075, TAN_DARK, 0, -0.06, 0.12, 0.35)); // beavertail
+  // trigger + trigger guard
+  g.add(box(0.015, 0.04, 0.015, STEEL, 0, -0.07, 0.02));
+  g.add(box(0.015, 0.02, 0.1, STEEL_DARK, 0, -0.09, 0.02)); // trigger guard
+  // front sight post (folded low, under the rail) + rear sight
+  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.08, -0.66));
+  g.add(box(0.05, 0.02, 0.06, STEEL, 0, 0.07, 0.16)); // rear sight
   // two gloved hands: rear on the grip, front on the foregrip
   g.add(box(0.1, 0.1, 0.13, GLOVE, 0, -0.11, 0.12, 0.35)); // rear hand on grip
-  g.add(box(0.09, 0.1, 0.1, GLOVE, 0, -0.11, -0.38, 0.1)); // front hand on foregrip
+  g.add(box(0.09, 0.1, 0.1, GLOVE, 0, -0.12, -0.38, 0.08)); // front hand on foregrip
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.72) };
 }
 

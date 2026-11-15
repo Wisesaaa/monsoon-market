@@ -87,13 +87,16 @@ function makeBotMesh(team) {
   gunBarrel.rotation.x = Math.PI / 2;
   gunBarrel.position.set(0, 0.02, -0.45);
   gun.add(gunBarrel);
-  const gunMag = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.07), darkMat);
+  const gunMag = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.07), new THREE.MeshStandardMaterial({ color: new THREE.Color('#8a7a5c'), roughness: 0.75 }));
   gunMag.position.set(0, -0.1, -0.05);
   gunMag.rotation.x = 0.25;
   gun.add(gunMag);
-  const gunStock = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.18), darkMat);
+  const gunStock = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.08, 0.18), new THREE.MeshStandardMaterial({ color: new THREE.Color('#8a7a5c'), roughness: 0.75 }));
   gunStock.position.set(0, -0.01, 0.36);
   gun.add(gunStock);
+  const gunSight = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.06, 0.07), darkMat);
+  gunSight.position.set(0, 0.08, 0.0);
+  gun.add(gunSight);
   gun.position.set(0.05, 1.28, -0.42);
   gun.rotation.y = -0.08;
   group.add(gun);
