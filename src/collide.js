@@ -55,10 +55,11 @@ export function createCollider(colliders) {
     body.velocity.y = Math.max(-30, body.velocity.y);
   }
 
-  // Start a jump. Only works from the ground.
-  function jump(body) {
+  // Start a jump. Only works from the ground. `mult` scales the jump
+  // speed (bunny-hop chains in player.js pass a lower mult for quick jumps).
+  function jump(body, mult = 1) {
     if (!body.onGround) return false;
-    body.velocity.y = JUMP_SPEED;
+    body.velocity.y = JUMP_SPEED * mult;
     body.onGround = false;
     return true;
   }

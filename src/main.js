@@ -1,7 +1,4 @@
 // Yardline — boot and the one loop: a fixed 60 Hz simulation feeding
-// a render at the display's rate. ?shot=cover|buy|mid|site with &seed=N sets
-// up a deterministic frame for a capture, renders it twice, then freezes it
-// and sets window.__shotReady.
 import * as THREE from 'three';
 import { PALETTE } from './palette.js';
 import { WEAPONS, ROUND, ECONOMY, TEAMS, createGameState } from './state.js';
@@ -134,6 +131,8 @@ function damage(target, amount, isHead, attacker) {
     dmg -= absorbed;
   }
   target.hp -= dmg;
+  // health regen restarts its 5s clock on every hit (player.js reads it)
+  if (target.isPlayer) target.body.lastDamageAt = G.time;
   // damage scoreboard: track who dealt how much, for the round-end screen
   if (attacker) attacker.damageDealt = (attacker.damageDealt || 0) + Math.round(dmg);
   target.damageTaken = (target.damageTaken || 0) + Math.round(dmg);
@@ -358,7 +357,9 @@ function syncWeaponHud() {
 function syncCamera() {
   // landing dip: the camera drops a little after a hard landing
   const dip = player.body.landDip * 0.09;
-  camera.position.set(player.body.position.x, player.body.position.y + player.body.eye - dip, player.body.position.z);
+  // head bob: the camera rises and falls with the feet (player.js)
+  const bob = mover.bobOffset(player.body);
+  camera.position.set(player.body.position.x, player.body.position.y + player.body.eye - dip + bob, player.body.position.z);
   // lean (Q/E): roll the camera and shift it sideways a touch, so a peek
   // around a corner reads as a lean, not a strafe
   const lean = player.body.lean;
@@ -394,7 +395,22 @@ function step(dt) {
   // player movement
   if (player.alive && G.phase !== 'matchEnd') {
     const wantAds = input.state.aiming && player.weapon && player.weapon.def.kind !== 'knife';
-    mover.stepBody(player.body, dt, input.state.keys, wantAds);
+    // reloading: while the weapon reloads the body cannot sprint
+    if (player.weapon) {
+      player.body.reloading = player.weapon.state.reloadLeft > 0;
+      player.body.switching = player.weapon.state.switchT > 0;
+    }
+    mover.stepBody(player.body, dt, input.state.keys, wantAds, G.time);
+    // fall damage: a hard landing hurts (player.js sets fallDamage)
+    if (player.body.fallDamage > 0) {
+      player.hp -= player.body.fallDamage;
+      player.body.lastDamageAt = G.time;
+      player.body.fallDamage = 0;
+      if (player.hp <= 0) damage(player, 1, false, null);
+    }
+    // health regen: 5s out of combat, hp comes back slowly
+    const regen = mover.regenRate(player.body, G.time);
+    if (regen > 0 && player.hp < 100) player.hp = Math.min(100, player.hp + regen * dt);
     // footsteps: a soft thud every couple of metres while moving on the ground
     const spd = mover.groundSpeed(player.body);
     if (spd > 0.5 && player.body.onGround) {
@@ -408,13 +424,13 @@ function step(dt) {
   // player weapon: sway and bob follow the mouse and the feet
   if (player.weapon) {
     // ADS: right mouse aims down the sights (not for the knife). While
-    // aiming the viewmodel centres, the spread tightens and the FOV
-    // narrows, so a held angle is a real decision, not a free zoom.
     const wantAds = input.state.aiming && player.weapon.def.kind !== 'knife' && player.alive;
     player.weapon.setAiming(wantAds);
-    const targetFov = wantAds ? 55 : 74;
+    // FOV: ADS narrows it, sprinting widens it (fovKick from player.js),
+    // and the ADS transition speed depends on the weapon.
+    const targetFov = (wantAds ? 55 : 74) + player.body.fovKick;
     if (Math.abs(camera.fov - targetFov) > 0.1) {
-      camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 12);
+      camera.fov += (targetFov - camera.fov) * Math.min(1, dt * mover.adsSpeed(player.body));
       camera.updateProjectionMatrix();
     }
     player.weapon.step(dt, {
@@ -681,10 +697,6 @@ function runShot(name) {
 
 function paintTwiceThenReady() {
   // Render synchronously, twice: the capture browser may throttle
-  // requestAnimationFrame in a background tab, so the shot must not depend
-  // on it. The two renders let shadows and the rain settle. Readiness is
-  // signalled on the document as well as on window, so a capture script
-  // that cannot read page globals can still see it.
   syncCamera();
   renderer.render(scene, camera);
   syncCamera();

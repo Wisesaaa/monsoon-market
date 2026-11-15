@@ -36,109 +36,53 @@ function buildRifle() {
   // vertical foregrip, curved tan mag, collapsible tan stock, birdcage
   // flash hider. Built pointing -z; the muzzle is at z = -0.72.
   const g = new THREE.Group();
-  g.add(box(0.09, 0.11, 0.42, STEEL_DARK));
-  g.add(box(0.095, 0.04, 0.12, STEEL, 0.0, 0.02, -0.02));
-  g.add(box(0.02, 0.02, 0.05, STEEL, 0.055, 0.0, 0.06));
-  g.add(box(0.06, 0.02, 0.02, STEEL, 0, 0.06, 0.2));
-  g.add(cyl(0.02, 0.52, STEEL, 0, 0.02, -0.44));
-  g.add(cyl(0.026, 0.07, STEEL_DARK, 0, 0.02, -0.7));
-  g.add(box(0.056, 0.02, 0.05, STEEL, 0, 0.02, -0.7));
-  g.add(box(0.085, 0.1, 0.34, STEEL_DARK, 0, -0.01, -0.34));
+  g.add(box(0.09, 0.11, 0.42, STEEL_DARK)); g.add(box(0.095, 0.04, 0.12, STEEL, 0.0, 0.02, -0.02)); g.add(box(0.02, 0.02, 0.05, STEEL, 0.055, 0.0, 0.06)); g.add(box(0.06, 0.02, 0.02, STEEL, 0, 0.06, 0.2)); g.add(cyl(0.02, 0.52, STEEL, 0, 0.02, -0.44)); g.add(cyl(0.026, 0.07, STEEL_DARK, 0, 0.02, -0.7));
+  g.add(box(0.056, 0.02, 0.05, STEEL, 0, 0.02, -0.7)); g.add(box(0.085, 0.1, 0.34, STEEL_DARK, 0, -0.01, -0.34));
   for (let i = 0; i < 4; i += 1) {
-    g.add(box(0.005, 0.02, 0.06, STEEL, 0.044, -0.01, -0.46 + i * 0.08));
-    g.add(box(0.005, 0.02, 0.06, STEEL, -0.044, -0.01, -0.46 + i * 0.08));
+    g.add(box(0.005, 0.02, 0.06, STEEL, 0.044, -0.01, -0.46 + i * 0.08)); g.add(box(0.005, 0.02, 0.06, STEEL, -0.044, -0.01, -0.46 + i * 0.08));
   }
   g.add(box(0.04, 0.015, 0.56, STEEL_DARK, 0, 0.062, -0.2));
   for (let i = 0; i < 7; i += 1) {
     g.add(box(0.045, 0.018, 0.012, STEEL, 0, 0.062, -0.44 + i * 0.07));
   }
-  g.add(box(0.06, 0.07, 0.09, STEEL_DARK, 0, 0.11, 0.0));
-  g.add(box(0.05, 0.05, 0.01, STEEL, 0, 0.11, -0.05));
+  g.add(box(0.06, 0.07, 0.09, STEEL_DARK, 0, 0.11, 0.0)); g.add(box(0.05, 0.05, 0.01, STEEL, 0, 0.11, -0.05));
   const lens = new THREE.Mesh(new THREE.CircleGeometry(0.02, 16),
     new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff2e1e') }));
   lens.position.set(0, 0.11, -0.056);
   lens.rotation.y = Math.PI;
   g.add(lens);
-  g.add(box(0.03, 0.02, 0.03, STEEL, 0, 0.15, 0.0));
-  g.add(box(0.045, 0.11, 0.05, TAN, 0, -0.11, -0.38, 0.08));
-  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.09, -0.38, 0.08));
-  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.12, -0.38, 0.08));
-  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.15, -0.38, 0.08));
-  g.add(box(0.05, 0.13, 0.07, TAN, 0, -0.11, -0.04, 0.12));
-  g.add(box(0.05, 0.12, 0.07, TAN, 0, -0.2, -0.09, 0.32));
-  g.add(box(0.05, 0.1, 0.06, TAN, 0, -0.27, -0.15, 0.55));
-  g.add(box(0.055, 0.02, 0.075, TAN_DARK, 0, -0.31, -0.18, 0.55));
-  g.add(box(0.07, 0.08, 0.2, TAN, 0, 0.0, 0.3));
-  g.add(box(0.07, 0.03, 0.22, TAN_DARK, 0, 0.045, 0.3));
-  g.add(box(0.075, 0.12, 0.03, TAN_DARK, 0, -0.01, 0.41));
-  g.add(box(0.02, 0.05, 0.02, STEEL_DARK, 0, -0.08, 0.4));
-  g.add(box(0.05, 0.02, 0.1, STEEL_DARK, 0, -0.05, 0.26));
-  g.add(box(0.06, 0.13, 0.07, TAN, 0, -0.11, 0.12, 0.35));
-  g.add(box(0.065, 0.03, 0.075, TAN_DARK, 0, -0.06, 0.12, 0.35));
-  g.add(box(0.015, 0.04, 0.015, STEEL, 0, -0.07, 0.02));
-  g.add(box(0.015, 0.02, 0.1, STEEL_DARK, 0, -0.09, 0.02));
-  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.08, -0.66));
-  g.add(box(0.05, 0.02, 0.06, STEEL, 0, 0.07, 0.16));
-  g.add(box(0.1, 0.1, 0.13, GLOVE, 0, -0.11, 0.12, 0.35));
-  g.add(box(0.09, 0.1, 0.1, GLOVE, 0, -0.12, -0.38, 0.08));
+  g.add(box(0.03, 0.02, 0.03, STEEL, 0, 0.15, 0.0)); g.add(box(0.045, 0.11, 0.05, TAN, 0, -0.11, -0.38, 0.08)); g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.09, -0.38, 0.08)); g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.12, -0.38, 0.08)); g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.15, -0.38, 0.08)); g.add(box(0.05, 0.13, 0.07, TAN, 0, -0.11, -0.04, 0.12));
+  g.add(box(0.05, 0.12, 0.07, TAN, 0, -0.2, -0.09, 0.32)); g.add(box(0.05, 0.1, 0.06, TAN, 0, -0.27, -0.15, 0.55)); g.add(box(0.055, 0.02, 0.075, TAN_DARK, 0, -0.31, -0.18, 0.55)); g.add(box(0.07, 0.08, 0.2, TAN, 0, 0.0, 0.3)); g.add(box(0.07, 0.03, 0.22, TAN_DARK, 0, 0.045, 0.3)); g.add(box(0.075, 0.12, 0.03, TAN_DARK, 0, -0.01, 0.41));
+  g.add(box(0.02, 0.05, 0.02, STEEL_DARK, 0, -0.08, 0.4)); g.add(box(0.05, 0.02, 0.1, STEEL_DARK, 0, -0.05, 0.26)); g.add(box(0.06, 0.13, 0.07, TAN, 0, -0.11, 0.12, 0.35)); g.add(box(0.065, 0.03, 0.075, TAN_DARK, 0, -0.06, 0.12, 0.35)); g.add(box(0.015, 0.04, 0.015, STEEL, 0, -0.07, 0.02)); g.add(box(0.015, 0.02, 0.1, STEEL_DARK, 0, -0.09, 0.02));
+  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.08, -0.66)); g.add(box(0.05, 0.02, 0.06, STEEL, 0, 0.07, 0.16)); g.add(box(0.1, 0.1, 0.13, GLOVE, 0, -0.11, 0.12, 0.35)); g.add(box(0.09, 0.1, 0.1, GLOVE, 0, -0.12, -0.38, 0.08));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.72) };
 }
 
 function buildSmg() {
   const g = new THREE.Group();
-  g.add(box(0.08, 0.09, 0.34, STEEL_DARK));
-  g.add(cyl(0.018, 0.3, STEEL, 0, 0.015, -0.3));
-  g.add(box(0.07, 0.07, 0.2, POLYMER, 0, -0.01, -0.2));
-  g.add(box(0.045, 0.2, 0.06, STEEL, 0, -0.14, -0.02));
-  g.add(box(0.06, 0.07, 0.16, POLYMER, 0, -0.01, 0.24, -0.1));
-  g.add(box(0.055, 0.11, 0.06, POLYMER, 0, -0.1, 0.1, 0.3));
-  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.06, -0.44));
-  g.add(box(0.04, 0.02, 0.05, STEEL, 0, 0.055, 0.1));
-  g.add(box(0.05, 0.09, 0.06, POLYMER, 0, -0.1, -0.2, 0.15));
-  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.1, 0.1, 0.3));
-  g.add(box(0.09, 0.08, 0.12, GLOVE, 0, -0.1, -0.2, 0.15));
+  g.add(box(0.08, 0.09, 0.34, STEEL_DARK)); g.add(cyl(0.018, 0.3, STEEL, 0, 0.015, -0.3)); g.add(box(0.07, 0.07, 0.2, POLYMER, 0, -0.01, -0.2)); g.add(box(0.045, 0.2, 0.06, STEEL, 0, -0.14, -0.02)); g.add(box(0.06, 0.07, 0.16, POLYMER, 0, -0.01, 0.24, -0.1)); g.add(box(0.055, 0.11, 0.06, POLYMER, 0, -0.1, 0.1, 0.3));
+  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.06, -0.44)); g.add(box(0.04, 0.02, 0.05, STEEL, 0, 0.055, 0.1)); g.add(box(0.05, 0.09, 0.06, POLYMER, 0, -0.1, -0.2, 0.15)); g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.1, 0.1, 0.3)); g.add(box(0.09, 0.08, 0.12, GLOVE, 0, -0.1, -0.2, 0.15));
   return { group: g, muzzle: new THREE.Vector3(0, 0.015, -0.46) };
 }
 
 function buildPistol() {
   const g = new THREE.Group();
-  g.add(box(0.06, 0.07, 0.24, STEEL_DARK, 0, 0.01, -0.05));
-  g.add(box(0.055, 0.05, 0.22, STEEL, 0, -0.03, -0.04));
-  g.add(box(0.055, 0.14, 0.07, POLYMER, 0, -0.1, 0.06, 0.25));
-  g.add(box(0.015, 0.03, 0.015, STEEL, 0, 0.055, -0.16));
-  g.add(box(0.04, 0.02, 0.03, STEEL, 0, 0.05, 0.05));
-  g.add(cyl(0.016, 0.1, STEEL, 0, 0.01, -0.19));
-  g.add(box(0.09, 0.1, 0.12, GLOVE, 0, -0.1, 0.06, 0.25));
-  g.add(box(0.08, 0.08, 0.1, GLOVE, 0.02, -0.09, -0.02, 0.2));
+  g.add(box(0.06, 0.07, 0.24, STEEL_DARK, 0, 0.01, -0.05)); g.add(box(0.055, 0.05, 0.22, STEEL, 0, -0.03, -0.04)); g.add(box(0.055, 0.14, 0.07, POLYMER, 0, -0.1, 0.06, 0.25)); g.add(box(0.015, 0.03, 0.015, STEEL, 0, 0.055, -0.16)); g.add(box(0.04, 0.02, 0.03, STEEL, 0, 0.05, 0.05)); g.add(cyl(0.016, 0.1, STEEL, 0, 0.01, -0.19));
+  g.add(box(0.09, 0.1, 0.12, GLOVE, 0, -0.1, 0.06, 0.25)); g.add(box(0.08, 0.08, 0.1, GLOVE, 0.02, -0.09, -0.02, 0.2));
   return { group: g, muzzle: new THREE.Vector3(0, 0.01, -0.24) };
 }
 
 function buildDmr() {
   const g = new THREE.Group();
-  g.add(box(0.08, 0.1, 0.48, STEEL_DARK));
-  g.add(cyl(0.018, 0.62, STEEL, 0, 0.02, -0.5));
-  g.add(cyl(0.03, 0.2, STEEL_DARK, 0, 0.09, -0.08));
-  g.add(cyl(0.038, 0.04, STEEL_DARK, 0, 0.09, -0.18));
-  g.add(box(0.07, 0.08, 0.26, WOOD, 0, -0.015, -0.3));
-  g.add(box(0.045, 0.1, 0.06, STEEL, 0, -0.11, -0.02, 0.1));
-  g.add(box(0.07, 0.09, 0.26, WOOD, 0, -0.02, 0.32, -0.05));
-  g.add(box(0.055, 0.12, 0.06, POLYMER, 0, -0.11, 0.11, 0.3));
-  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3));
-  g.add(box(0.09, 0.08, 0.13, GLOVE, 0, -0.07, -0.3));
+  g.add(box(0.08, 0.1, 0.48, STEEL_DARK)); g.add(cyl(0.018, 0.62, STEEL, 0, 0.02, -0.5)); g.add(cyl(0.03, 0.2, STEEL_DARK, 0, 0.09, -0.08)); g.add(cyl(0.038, 0.04, STEEL_DARK, 0, 0.09, -0.18)); g.add(box(0.07, 0.08, 0.26, WOOD, 0, -0.015, -0.3)); g.add(box(0.045, 0.1, 0.06, STEEL, 0, -0.11, -0.02, 0.1));
+  g.add(box(0.07, 0.09, 0.26, WOOD, 0, -0.02, 0.32, -0.05)); g.add(box(0.055, 0.12, 0.06, POLYMER, 0, -0.11, 0.11, 0.3)); g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3)); g.add(box(0.09, 0.08, 0.13, GLOVE, 0, -0.07, -0.3));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.82) };
 }
 
 function buildShotgun() {
   const g = new THREE.Group();
-  g.add(box(0.1, 0.11, 0.4, STEEL_DARK));
-  g.add(cyl(0.03, 0.5, STEEL, 0, 0.02, -0.42));
-  g.add(cyl(0.022, 0.46, STEEL_DARK, 0, -0.03, -0.4));
-  g.add(box(0.09, 0.08, 0.2, WOOD, 0, -0.07, -0.32));
-  g.add(box(0.08, 0.1, 0.24, WOOD, 0, -0.02, 0.3, -0.06));
-  g.add(box(0.06, 0.12, 0.07, POLYMER, 0, -0.11, 0.11, 0.3));
-  g.add(box(0.02, 0.05, 0.02, STEEL, 0, 0.08, -0.64));
-  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3));
-  g.add(box(0.1, 0.09, 0.14, GLOVE, 0, -0.08, -0.32));
+  g.add(box(0.1, 0.11, 0.4, STEEL_DARK)); g.add(cyl(0.03, 0.5, STEEL, 0, 0.02, -0.42)); g.add(cyl(0.022, 0.46, STEEL_DARK, 0, -0.03, -0.4)); g.add(box(0.09, 0.08, 0.2, WOOD, 0, -0.07, -0.32)); g.add(box(0.08, 0.1, 0.24, WOOD, 0, -0.02, 0.3, -0.06)); g.add(box(0.06, 0.12, 0.07, POLYMER, 0, -0.11, 0.11, 0.3));
+  g.add(box(0.02, 0.05, 0.02, STEEL, 0, 0.08, -0.64)); g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3)); g.add(box(0.1, 0.09, 0.14, GLOVE, 0, -0.08, -0.32));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.68) };
 }
 
@@ -146,8 +90,7 @@ function buildKnife() {
   const g = new THREE.Group();
   const blade = box(0.015, 0.09, 0.3, new THREE.MeshStandardMaterial({ color: new THREE.Color('#b9bec6'), roughness: 0.25, metalness: 0.9 }), 0, 0.02, -0.2, -0.5);
   g.add(blade);
-  g.add(box(0.04, 0.06, 0.14, POLYMER, 0, -0.02, 0.02, -0.5));
-  g.add(box(0.09, 0.1, 0.13, GLOVE, 0, -0.02, 0.02, -0.5));
+  g.add(box(0.04, 0.06, 0.14, POLYMER, 0, -0.02, 0.02, -0.5)); g.add(box(0.09, 0.1, 0.13, GLOVE, 0, -0.02, 0.02, -0.5));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.35) };
 }
 

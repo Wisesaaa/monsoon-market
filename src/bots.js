@@ -1,10 +1,4 @@
 // Monsoon Market — the bots. Nine of them: four teammates, five opponents.
-// Each has a name, a role and a route. Attackers follow a team plan to a site
-// (and the carrier plants); defenders hold a site, listen, and rotate on
-// contact or on a plant. They see with a cone + line of sight, hear gunshots,
-// and shoot in bursts with a reaction time — never instantly, never perfectly.
-// Routes come from nav.js (the waypoint graph); sounds come from hearing.js
-// (the noise system) — this file owns decisions, not the map or the ears.
 import * as THREE from 'three';
 import { WEAPONS, BOT_NAMES, ECONOMY } from './state.js';
 import { createBody } from './player.js';
@@ -30,8 +24,6 @@ function trimColor(team) {
 
 function makeBotMesh(team) {
   // A soldier, not a box: helmet, vest with pouches, backpack, arms holding
-  // a rifle forward, legs with boots. Built facing -z (the mesh is rotated
-  // by yaw + PI in syncMesh, so -z is the bot's forward).
   const group = new THREE.Group();
   const uniform = new THREE.MeshStandardMaterial({ color: team === 'attack' ? new THREE.Color('#6b5a3a') : new THREE.Color('#3a4a52'), roughness: 0.9 });
   const vestMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#2e2a24'), roughness: 0.85 });
@@ -177,7 +169,7 @@ export function createBots(scene, map, mover, G) {
       routeIndex: 0,
       holdPos: null,
       watchYaw: 0,
-      state: 'advance', // advance | hold | investigate | retreat | postplant | plant | defuse
+      state: 'advance', // advance | hold | investigate | retreat | postplant | plant | defuse | retake
       investigatePos: null,
       investigateAt: 0,
       retreatAt: 0,
@@ -185,6 +177,12 @@ export function createBots(scene, map, mover, G) {
       postplant: false,
       postplantPos: null,
       postplantAt: 0,
+      retakePos: null, // [x, z] rally point for a coordinated retake
+      retakeAt: 0,
+      lastFragAt: -99, // last time this bot threw a frag
+      lastRoundWon: true, // for the economy: a loss + low money = save round
+      lowHpCalled: false, // has this bot called out its low HP this life
+      reloadCalled: false, // has this bot called out its reload this mag
       lastTradeAt: -99,
       diedAt: -99,
       killerPos: null,
@@ -219,25 +217,33 @@ export function createBots(scene, map, mover, G) {
     spawnBot(4 + i, 'defend', n.name, n.role);
   }
 
+  // Economy: bots buy like a team, not like a slot machine. A lost round
   function buyFor(bot, round) {
     const budget = bot.money;
+    // save round: the team lost the previous round and is broke — pistol
+    // + armor only, so the next round can afford a rifle
+    const saveRound = round >= 2 && budget < 2000 && bot.lastRoundWon === false;
     let weapon = 'p9';
-    if (round >= 2 && budget >= 2700) weapon = 'monsoon';
-    else if (round >= 2 && budget >= 1500) weapon = 'drizzle';
-    else if (budget >= 3500 && bot.role === 'Marksman') weapon = 'longrain';
+    if (!saveRound) {
+      if (round >= 2 && budget >= 2700) weapon = 'monsoon';
+      else if (round >= 2 && budget >= 1500) weapon = 'drizzle';
+      else if (budget >= 3500 && bot.role === 'Marksman') weapon = 'longrain';
+    }
     if (bot.weapon) bot.weapon.dispose();
     bot.weapon = createWeaponInstance(null, weapon);
     bot.weapon.refill();
-    if (budget >= 650 + WEAPONS[weapon].price) {
+    // force buy: a rich team buys armor + helm even after a loss
+    const forceBuy = budget >= 4000;
+    if (!saveRound && (budget >= 650 + WEAPONS[weapon].price || forceBuy)) {
       bot.armor = 100;
       bot.hasHelm = budget >= 1000 + WEAPONS[weapon].price;
     }
     // defenders buy a defuse kit when they can afford it (defuse 2.5s)
-    if (bot.team === 'defend' && budget >= 400 + WEAPONS[weapon].price + (bot.armor ? 650 : 0)) {
+    if (bot.team === 'defend' && !saveRound && budget >= 400 + WEAPONS[weapon].price + (bot.armor ? 650 : 0)) {
       bot.hasKit = true;
     }
     bot.money -= WEAPONS[weapon].price + (bot.armor ? 650 : 0) + (bot.hasHelm ? 350 : 0) + (bot.hasKit ? 400 : 0);
-    bot.utility = { frag: round >= 3 ? 1 : 0, smoke: round >= 2 ? 1 : 0, flash: 0 };
+    bot.utility = { frag: round >= 3 ? 1 : 0, smoke: round >= 2 ? 1 : 0, flash: round >= 3 ? 1 : 0 };
   }
 
   function assignRound(planIndex) {
@@ -371,8 +377,6 @@ export function createBots(scene, map, mover, G) {
     }
 
     // hearing.js returns the loudest fresh noise in range. A bot holding a
-    // site turns toward it and calls it out; a bot on the move peels off
-    // its route to investigate close gunfire.
     if (!bot.target && hearing) {
       const heard = hearing.hear(bot.body.position.x, bot.body.position.z);
       if (heard) {
@@ -391,6 +395,55 @@ export function createBots(scene, map, mover, G) {
             bot.radioAt = time;
             radio(bot, 'Shots close by — checking it out');
           }
+        }
+      }
+    }
+
+    // --- retake: the charge is planted — defenders rally before pushing ---
+    if (G.stormcell.planted && bot.team === 'defend' && bot.alive && !bot.target) {
+      const site = map.sites[G.stormcell.site];
+      const rally = nav.nearestWaypoint(site.x, site.z + 8);
+      const rallyPos = nav.waypointPos(rally) || [site.x, site.z + 8];
+      const matesReady = ctx.actors.filter((a) => a.team === 'defend' && a.alive
+        && a !== bot && Math.hypot(a.body.position.x - rallyPos[0], a.body.position.z - rallyPos[1]) < 6).length;
+      const fuseLow = G.stormcell.fuse < 15;
+      if (bot.state !== 'retake' && bot.state !== 'defuse' && (matesReady >= 1 || fuseLow)) {
+        bot.state = 'retake';
+        bot.retakePos = rallyPos;
+        bot.retakeAt = time;
+        if (time - bot.radioAt > 8) {
+          bot.radioAt = time;
+          radio(bot, `Retaking ${site.name} together — go on my mark`);
+        }
+      }
+      if (bot.state === 'retake' && bot.retakePos) {
+        const arrived = !keysToward(bot, bot.retakePos[0], bot.retakePos[1]);
+        const matesHere = ctx.actors.filter((a) => a.team === 'defend' && a.alive
+          && Math.hypot(a.body.position.x - bot.body.position.x, a.body.position.z - bot.body.position.z) < 5).length;
+        // push the site when a mate is here, or when the fuse is low
+        if (arrived && (matesHere >= 1 || fuseLow || time - bot.retakeAt > 6)) {
+          bot.state = 'advance';
+          bot.route = null;
+          bot.investigatePos = [site.x, site.z];
+          bot.investigateAt = time;
+        }
+        mover.stepBody(bot.body, dt, bot.keys, false, time);
+        bot.walkPhase += dt * Math.hypot(bot.body.velocity.x, bot.body.velocity.z);
+        syncMesh(bot);
+        return;
+      }
+    }
+
+    // --- frag utility: a bot that sees (or hears) an enemy at mid range
+    if (bot.target && bot.target.alive && bot.utility.frag > 0 && throwGrenade) {
+      const t = bot.target;
+      const dist = Math.hypot(t.body.position.x - bot.body.position.x, t.body.position.z - bot.body.position.z);
+      if (dist > 8 && dist < 20 && time - bot.lastFragAt > 12) {
+        bot.lastFragAt = time;
+        const target = new THREE.Vector3(t.body.position.x, 1.2, t.body.position.z);
+        if (throwGrenade(bot, 'frag', target) && time - bot.radioAt > 8) {
+          bot.radioAt = time;
+          radio(bot, 'Frag out — pushing after it');
         }
       }
     }
@@ -425,8 +478,6 @@ export function createBots(scene, map, mover, G) {
           const dist = Math.hypot(dx, dz);
           const moving = Math.hypot(t.body.velocity.x, t.body.velocity.z) > 2;
           // accuracy: worse at range, worse if the target runs, worse if
-          // this bot is still moving (it stops to shoot, so a bot that just
-          // halted is less accurate), better when settled and skilled.
           const ownSpeed = Math.hypot(bot.body.velocity.x, bot.body.velocity.z);
           let chance = 0.5 - dist * 0.008 - (moving ? 0.12 : 0)
             - (ownSpeed > 1 ? 0.15 : 0) + (ownSpeed < 0.5 ? 0.06 : 0)
@@ -444,6 +495,24 @@ export function createBots(scene, map, mover, G) {
             let dmg = bot.weapon.def.damage * (head ? bot.weapon.def.headMult : 1);
             if (t.armor > 0) dmg *= 0.6;
             damage(t, dmg, head, bot);
+          }
+          // low HP callout: a bot under 30 HP says so, so a teammate
+          // knows to trade for it instead of letting it die alone.
+          if (bot.hp < 30 && !bot.lowHpCalled && time - bot.radioAt > 8) {
+            bot.lowHpCalled = true;
+            bot.radioAt = time;
+            radio(bot, 'Low HP — trade me if I go down');
+          }
+          // reloading callout: a bot that empties its mag mid-fight says
+          // so, so a teammate covers the angle while it reloads.
+          if (bot.weapon.state.mag === 0 && !bot.reloadCalled) {
+            bot.reloadCalled = true;
+            if (time - bot.radioAt > 8) {
+              bot.radioAt = time;
+              radio(bot, 'Reloading — cover me');
+            }
+          } else if (bot.weapon.state.mag > 0) {
+            bot.reloadCalled = false;
           }
           if (bot.burstLeft <= 0) bot.burstPause = 0.5 + random() * 0.7;
         } else bot.burstPause -= dt;
@@ -514,6 +583,13 @@ export function createBots(scene, map, mover, G) {
     if (bot.state === 'advance' && bot.route) {
       const next = nav.followRoute(bot);
       if (next < 0) {
+        // map control: a mid route ends at mid, not at a site — the bot
+        if (bot.team === 'attack' && (bot.route === 'attackMidA' || bot.route === 'attackMidB')) {
+          if (time - bot.radioAt > 8) {
+            bot.radioAt = time;
+            radio(bot, 'Mid is ours — holding both lanes');
+          }
+        }
         // route finished: if this is an attack route ending at a site,
         // execute — smoke the entrance, flash the site, then hold.
         if (bot.team === 'attack' && bot.route.startsWith('attack') && throwGrenade) {
