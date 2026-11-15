@@ -83,7 +83,29 @@ orang, model hasil scan). Yang didorong ke arah itu:
 - Hasil tes: 4 screenshot staged nol error; dossier 141.128 byte
   (< 163.840 cap); 4 gambar; cover = 1-cover.jpg.
 
-### Yang masih jelek (iterasi 2)
+## Iterasi 3 — LONGHAUL AR dari gambar referensi Yiro (15 Nov ~21:00–21:05 WIB)
+Yiro kirim gambar referensi AR-15 (multi-view: samping kiri/kanan, depan,
+belakang). Viewmodel rifle dibangun ulang dari gambar itu:
+- **Two-tone hitam + tan/FDE** (persis referensi): receiver, handguard,
+  dan laras hitam; stock, pistol grip, magazine, dan foregrip tan.
+- Handguard M-LOK hitam (slot di kedua sisi) + rail atas penuh.
+- Red-dot holographic: housing kotak + lensa bundar merah + knob atas.
+- Foregrip tan ber-rib (3 rib), magazine tan melengkung (3 segmen +
+  baseplate), stock tan collapsible (cheek riser + butt plate + sling
+  loop + buffer tube), pistol grip tan (beavertail), flash hider
+  birdcage, charging handle, ejection port, fire selector.
+- Bot juga pegang rifle two-tone yang sama (mag + stock tan, sight).
+- Referensi disimpan di `ref-rifle-ar15.webp` (bukan aset game).
+- Hasil tes: 4 screenshot staged nol error; dossier 143.637 byte
+  (< 163.840 cap).
+
+### Yang masih kurang (iterasi 3)
+- Detail halus referensi (ukiran, baut, wear, tekstur) tidak bisa
+  direproduksi dari geometri — siluet + warna + bagian khasnya yang
+  ditiru.
+- Red-dot sight masih kecil dari sudut pandang pemain.
+- 60 FPS + pointer lock tetap belum terverifikasi di Chrome desktop
+  beneran.
 - Prajurit masih dari primitif (kotak/silinder/bola) — siluetnya sudah
   manusia, tapi detail kain, wajah, dan gear masih kasar.
 - Red-dot sight kecil dan susah dilihat dari sudut pandang pemain.
