@@ -56,12 +56,12 @@ function makeBotMesh(team) {
   b(0.18, 0.1, 0.3, bootMat, 0.12, 0.05, -0.04);
   // torso + vest + pouches + backpack
   const torso = b(0.52, 0.6, 0.3, uniform, 0, 1.18, 0);
-  b(0.54, 0.42, 0.08, vestMat, 0, 1.2, -0.17); // vest plate, chest
-  b(0.12, 0.16, 0.06, vestMat, -0.14, 1.18, -0.22); // pouch
-  b(0.12, 0.16, 0.06, vestMat, 0.14, 1.18, -0.22); // pouch
-  b(0.1, 0.12, 0.05, trimMat, 0, 1.32, -0.22); // chest light / marker
-  b(0.4, 0.48, 0.16, vestMat, 0, 1.22, 0.22); // backpack
-  b(0.3, 0.1, 0.06, darkMat, 0, 1.5, 0.24); // backpack top roll
+  b(0.54, 0.42, 0.08, vestMat, 0, 1.2, -0.17);
+  b(0.12, 0.16, 0.06, vestMat, -0.14, 1.18, -0.22);
+  b(0.12, 0.16, 0.06, vestMat, 0.14, 1.18, -0.22);
+  b(0.1, 0.12, 0.05, trimMat, 0, 1.32, -0.22);
+  b(0.4, 0.48, 0.16, vestMat, 0, 1.22, 0.22);
+  b(0.3, 0.1, 0.06, darkMat, 0, 1.5, 0.24);
   // head + helmet
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.14, 12, 10), skinMat);
   head.position.set(0, 1.66, 0);
@@ -78,8 +78,8 @@ function makeBotMesh(team) {
   // arms: rear arm to the grip, front arm to the handguard
   const armR = b(0.13, 0.13, 0.5, uniform, 0.3, 1.32, -0.18, 0.5, 0, 0);
   const armL = b(0.13, 0.13, 0.45, uniform, -0.28, 1.3, -0.22, 0.35, 0, 0);
-  b(0.1, 0.1, 0.12, skinMat, 0.3, 1.18, -0.38); // rear hand on grip
-  b(0.1, 0.1, 0.12, skinMat, -0.28, 1.2, -0.42); // front hand on handguard
+  b(0.1, 0.1, 0.12, skinMat, 0.3, 1.18, -0.38);
+  b(0.1, 0.1, 0.12, skinMat, -0.28, 1.2, -0.42);
   // rifle held forward, slightly angled, in both hands
   const gun = new THREE.Group();
   const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.09, 0.62), darkMat);
@@ -177,11 +177,17 @@ export function createBots(scene, map, mover, G) {
       routeIndex: 0,
       holdPos: null,
       watchYaw: 0,
-      state: 'advance', // advance | hold | investigate | retreat | plant | defuse
-      investigatePos: null, // [x, z] of a sound the bot is walking to check
+      state: 'advance', // advance | hold | investigate | retreat | postplant | plant | defuse
+      investigatePos: null,
       investigateAt: 0,
-      retreatAt: 0, // when the bot started falling back (hp < 30)
-      retreatFrom: null, // { x, z } of the enemy it is running from
+      retreatAt: 0,
+      retreatFrom: null,
+      postplant: false,
+      postplantPos: null,
+      postplantAt: 0,
+      lastTradeAt: -99,
+      diedAt: -99,
+      killerPos: null,
       target: null,
       lastSeen: null,
       lastSeenAt: -99,
@@ -226,7 +232,11 @@ export function createBots(scene, map, mover, G) {
       bot.armor = 100;
       bot.hasHelm = budget >= 1000 + WEAPONS[weapon].price;
     }
-    bot.money -= WEAPONS[weapon].price + (bot.armor ? 650 : 0) + (bot.hasHelm ? 350 : 0);
+    // defenders buy a defuse kit when they can afford it (defuse 2.5s)
+    if (bot.team === 'defend' && budget >= 400 + WEAPONS[weapon].price + (bot.armor ? 650 : 0)) {
+      bot.hasKit = true;
+    }
+    bot.money -= WEAPONS[weapon].price + (bot.armor ? 650 : 0) + (bot.hasHelm ? 350 : 0) + (bot.hasKit ? 400 : 0);
     bot.utility = { frag: round >= 3 ? 1 : 0, smoke: round >= 2 ? 1 : 0, flash: 0 };
   }
 
@@ -248,7 +258,7 @@ export function createBots(scene, map, mover, G) {
       bot.state = 'hold';
       const wp = map.waypoints[bot.route];
       bot.holdPos = wp;
-      bot.watchYaw = Math.PI; // defenders face south, into the yard
+      bot.watchYaw = Math.PI;
     });
     return plan;
   }
@@ -274,6 +284,10 @@ export function createBots(scene, map, mover, G) {
       bot.lastSeen = null;
       bot.state = bot.team === 'attack' ? 'advance' : 'hold';
       bot.routeIndex = 0;
+      bot.postplant = false;
+      bot.postplantPos = null;
+      bot.diedAt = -99;
+      bot.killerPos = null;
       buyFor(bot, G.round);
     }
     // stormcell goes to a random attacker bot (never the player first round)
@@ -307,11 +321,27 @@ export function createBots(scene, map, mover, G) {
 
   function stepBot(bot, dt, ctx) {
     if (!bot.alive) return;
-    const { G, colliders, damage, tracer, hearing, radio, time } = ctx;
+    const { G, colliders, damage, tracer, hearing, throwGrenade, radio, time } = ctx;
     bot.visionAt -= dt;
     bot.weapon.step(dt);
 
-    // --- pick a target, throttled ---
+    // --- trade kill: a teammate just died near this bot — peek the spot
+    // they died at, instead of waiting for the killer to come to us. ---
+    if (!bot.target && bot.lastTradeAt !== time) {
+      for (const other of ctx.actors) {
+        if (other.team !== bot.team || other.alive || other === bot) continue;
+        if (other.diedAt === undefined || time - other.diedAt > 3) continue;
+        const d = Math.hypot(other.body.position.x - bot.body.position.x, other.body.position.z - bot.body.position.z);
+        if (d < 16 && other.killerPos) {
+          bot.state = 'investigate';
+          bot.investigatePos = [other.killerPos.x, other.killerPos.z];
+          bot.investigateAt = time;
+          bot.lastTradeAt = time;
+          break;
+        }
+      }
+    }
+
     if (bot.visionAt <= 0) {
       bot.visionAt = 0.12 + random() * 0.08;
       let best = null;
@@ -340,7 +370,6 @@ export function createBots(scene, map, mover, G) {
       }
     }
 
-    // --- hear a sound ---
     // hearing.js returns the loudest fresh noise in range. A bot holding a
     // site turns toward it and calls it out; a bot on the move peels off
     // its route to investigate close gunfire.
@@ -366,7 +395,6 @@ export function createBots(scene, map, mover, G) {
       }
     }
 
-    // --- engage ---
     if (bot.target && bot.target.alive) {
       const t = bot.target;
       const dx = t.body.position.x - bot.body.position.x;
@@ -425,7 +453,6 @@ export function createBots(scene, map, mover, G) {
       return;
     }
 
-    // --- plant / defuse ---
     if (bot.state === 'plant') {
       bot.keys.clear();
       mover.stepBody(bot.body, dt, bot.keys);
@@ -435,6 +462,34 @@ export function createBots(scene, map, mover, G) {
     if (bot.state === 'defuse') {
       bot.keys.clear();
       mover.stepBody(bot.body, dt, bot.keys);
+      syncMesh(bot);
+      return;
+    }
+
+    // --- post-plant: the charge is down — attackers stop pushing and
+    // take post-plant angles on the site instead of sitting on the bomb. ---
+    if (G.stormcell.planted && bot.team === 'attack' && bot.alive
+      && (bot.state === 'advance' || bot.state === 'hold') && !bot.postplant) {
+      const site = map.sites[G.stormcell.site];
+      // a post-plant spot: near the site, but off the plant itself, so the
+      // bot watches an entrance instead of standing on the charge
+      const spot = nav.nearestWaypoint(site.x + (bot.id.charCodeAt(3) % 2 ? 6 : -6), site.z + 4);
+      bot.postplant = true;
+      bot.state = 'postplant';
+      bot.postplantPos = nav.waypointPos(spot) || [site.x, site.z];
+      bot.postplantAt = time;
+    }
+    if (bot.state === 'postplant' && bot.postplantPos) {
+      const arrived = !keysToward(bot, bot.postplantPos[0], bot.postplantPos[1]);
+      if (arrived || time - bot.postplantAt > 5) {
+        bot.state = 'hold';
+        bot.holdPos = [bot.body.position.x, bot.body.position.z];
+        // watch the site, not the wall behind it
+        const site = map.sites[G.stormcell.site];
+        bot.watchYaw = Math.atan2(-(site.x - bot.body.position.x), -(site.z - bot.body.position.z));
+      }
+      mover.stepBody(bot.body, dt, bot.keys);
+      bot.walkPhase += dt * Math.hypot(bot.body.velocity.x, bot.body.velocity.z);
       syncMesh(bot);
       return;
     }
@@ -456,10 +511,25 @@ export function createBots(scene, map, mover, G) {
       return;
     }
 
-    // --- move along the route (nav.js owns the waypoint graph) ---
     if (bot.state === 'advance' && bot.route) {
       const next = nav.followRoute(bot);
       if (next < 0) {
+        // route finished: if this is an attack route ending at a site,
+        // execute — smoke the entrance, flash the site, then hold.
+        if (bot.team === 'attack' && bot.route.startsWith('attack') && throwGrenade) {
+          const siteKey = (bot.route === 'attackA' || bot.route === 'attackMidA') ? 'A' : 'B';
+          const site = map.sites[siteKey];
+          const sitePos = new THREE.Vector3(site.x, 1.2, site.z);
+          if (bot.utility.smoke > 0) {
+            throwGrenade(bot, 'smoke', sitePos);
+            if (time - bot.radioAt > 8) {
+              bot.radioAt = time;
+              radio(bot, `Smoking ${site.name} — go go go`);
+            }
+          } else if (bot.utility.flash > 0) {
+            throwGrenade(bot, 'flash', sitePos);
+          }
+        }
         bot.state = 'hold';
         bot.holdPos = [bot.body.position.x, bot.body.position.z];
         bot.watchYaw = bot.body.yaw;
@@ -500,11 +570,16 @@ export function createBots(scene, map, mover, G) {
     bot.mesh.position.y += bob;
   }
 
-  function killBot(bot) {
+  function killBot(bot, killer, time) {
     bot.alive = false;
     bot.mesh.rotation.x = -Math.PI / 2;
     bot.mesh.position.y = 0.25;
     bot.target = null;
+    // trade-kill info: when and where this bot died, so a teammate can peek it
+    bot.diedAt = time !== undefined ? time : 0;
+    bot.killerPos = killer && killer.body
+      ? { x: killer.body.position.x, z: killer.body.position.z }
+      : null;
   }
 
   return {

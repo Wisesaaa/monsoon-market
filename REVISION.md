@@ -224,3 +224,14 @@ Yang dibangun (semua kode ditulis sendiri di sesi ini):
 - Overlay title diperbaiki: "MONSOON MARKET" (sebelumnya masih "YARDLINE" dari iterasi lama).
 Tes: 4 capture staged, nol error. Dossier 156.436 byte (cap 163.840 — headroom cuma ~7,4 KB, hati-hati nambah kode). Plant zone cyan kelihatan di site shot; footer controls kelihatan.
 Yang masih jelek: dossier hampir penuh (kalau nambah fitur besar, harus trim kode mati/komentar dulu); 60 FPS + pointer lock masih belum terverifikasi di desktop Chrome asli; ADS belum bisa dites klik kanan di Xvfb (pointer lock tidak engage). TIDAK di-submit (hold: Yiro preview dulu, baru dia bilang "gas entry").
+
+## Iterasi 7 — Ronde kedua, lebih dalam (16 Nov ~00:40 WIB, belum di-submit)
+Yiro: "Gw udah kasih lu verdict banyak loh... gw harap lu melakukan upgrade yang lebih bagus sesuai verdict nya." → gas, jangan entry dulu.
+Yang dibangun (semua kode ditulis sendiri di sesi ini):
+- player.js 131 → 207 baris: stamina (sprint nguras 22/dtk, regen 16/dtk, lock di bawah 10 sampai pulih 25), berat senjata (pistol/knife 1,0; SMG 0,94; rifle 0,9; DMR 0,86; shotgun 0,84), slide (crouch pas sprint, 0,7 dtk, mata 0,85 m), lean Q/E (roll kamera 0,06 rad + geser 0,12 m), counter-strafe (rem mendadak pas ganti arah, 14/dtk), landing dip (kamera turun 0,09 m proporsional kecepatan jatuh). Kamera + equipSlot di main.js diupdate (lean roll, landing dip, weaponKind).
+- bots.js 521 → 601 baris: site execute (bot attacker lempar smoke ke site pas rute selesai + radio "Smoking ... — go go go", flash kalau smoke habis), trade kill (bot peek posisi killer pas teman mati < 3 dtk & < 16 m), post-plant (bot attacker ambil posisi jaga angle pas charge planted), bot beli defuse kit (defender, $400, defuse 2,5 dtk). killBot(bot, killer, time) mencatat diedAt + killerPos.
+- bomb.js (baru): plant/fuse/defuse dipisah dari rounds.js (reset, plantStep, fuseStep). grenade.js (baru): frag/smoke/flash dipisah dari main.js (throwAt + step, bot bisa lempar granat).
+- Dossier sempat OVER CAP: 163.821 byte → grenade.js hilang total dari dossier + hearing.js terpotong 14 baris. Perbaikan: trim komentar trailing + section divider + header modul → dossier 160.919 byte, headroom 2.921, TIDAK ada yang terpotong (semua file utuh).
+- Title <title> diperbaiki: "Yardline" → "Monsoon Market".
+Tes: 4 capture staged, nol error; logic test movement PASS + buy PASS ($800 → $150, armor 0 → 100), nol page error. Screenshot baru (1-cover..4-site.jpg).
+Yang masih jelek: dossier tinggal headroom ~2,9 KB — nambah fitur besar lagi harus trim dulu; 60 FPS + pointer lock masih belum terverifikasi di desktop Chrome asli; ADS belum bisa dites klik kanan di Xvfb. TIDAK di-submit (hold: Yiro preview dulu, baru dia bilang "gas entry").

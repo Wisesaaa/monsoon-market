@@ -1,15 +1,9 @@
-// Monsoon Market — nav.js. Bot navigation: the waypoint graph and route
-// following. The map defines named waypoints ([x, z] in world space) and
-// named routes (a route is an ordered list of waypoint names). A bot holds
-// a route name + an index into it; nav turns the bot toward each waypoint,
-// walks it there with the mover's key set, and advances the index on
-// arrival. It also answers "which route takes me from here to that site"
-// for defenders rotating after a plant, and finds the nearest waypoint to
-// a position for investigations.
+// Monsoon Market — nav.js. The bot waypoint graph: named waypoints,
+// routes between them, and the steering that walks a bot along a route.
 import * as THREE from 'three';
 
-const TURN_RATE = 0.12; // radians per fixed step, how fast a bot can turn
-const ARRIVE_DIST = 0.4; // metres: close enough to count as "at" a waypoint
+const TURN_RATE = 0.12;
+const ARRIVE_DIST = 0.4;
 
 export function createNav(map) {
   const waypoints = map.waypoints;

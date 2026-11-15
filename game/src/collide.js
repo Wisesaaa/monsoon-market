@@ -1,13 +1,8 @@
-// Monsoon Market — collide.js. The collision solver: a body is an axis-
-// aligned box (a radius around the feet, a height from the feet up), and
-// the world is a list of axis-aligned boxes. Movement is resolved one axis
-// at a time — x, then z, then y — so a body slides along a wall instead of
-// sticking to it, and a wall never swallows a body that walks into it.
-// The same solver drives the local player and every bot: both are bodies,
-// both move through stepBody in player.js, and both collide here.
+// Monsoon Market — collide.js. The collision solver: a body is an
+// axis-aligned box; move one axis at a time so a wall never swallows it.
 import * as THREE from 'three';
 
-const RADIUS = 0.34; // half-width of a body, in metres
+const RADIUS = 0.34;
 const GRAVITY = 20;
 const JUMP_SPEED = 6.2;
 

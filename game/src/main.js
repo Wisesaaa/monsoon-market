@@ -15,6 +15,7 @@ import { createBots } from './bots.js';
 import { createRounds } from './rounds.js';
 import { createHud } from './hud.js';
 import { createHearing } from './hearing.js';
+import { createGrenades } from './grenade.js';
 
 const FIXED_STEP = 1 / 60;
 const params = new URLSearchParams(window.location.search);
@@ -57,8 +58,9 @@ const mover = createMover(map.colliders);
 const G = createGameState();
 // hearing.js owns the noise system: gunshots, footsteps, plant beeps.
 const hearing = createHearing(G.noises);
+// grenade.js owns the throwable utility (frag / smoke / flash).
+const grenadeSys = createGrenades(scene);
 
-// --- the player ---
 const player = {
   id: 'you', name: 'You', team: 'attack', isPlayer: true,
   body: createBody(0, 16, Math.PI),
@@ -98,6 +100,8 @@ function equipSlot(slot) {
   player.activeSlot = slot;
   player.weapon = player.loadout[slot];
   player.weapon.attach(camera);
+  // weapon weight: a DMR slows the body, a pistol does not
+  player.body.weaponKind = player.weapon.def.kind;
   syncWeaponHud();
 }
 
@@ -142,7 +146,7 @@ function damage(target, amount, isHead, attacker) {
       hud.showBanner('ELIMINATED', 'Your team fights on — next round you are back in.');
       if (document.pointerLockElement) document.exitPointerLock();
     } else {
-      bots.killBot(target);
+      bots.killBot(target, attacker, G.time);
       const wname = attacker && attacker.weapon ? attacker.weapon.def.name : '';
       feed(`${attacker ? attacker.name : ''} ${wname}${isHead ? ' HS' : ''} ${target.name}`, attacker && attacker.isPlayer ? 'good' : '');
       if (attacker) {
@@ -245,66 +249,13 @@ function playerShoot() {
   syncWeaponHud();
 }
 
-// --- grenades ---
-const grenades = [];
-const grenadeGeo = new THREE.SphereGeometry(0.09, 8, 6);
-const grenadeMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#1c1e26'), roughness: 0.6 });
 function throwGrenade(kind) {
   if (!player.alive || player.utility[kind] <= 0) return;
-  player.utility[kind] -= 1;
-  const mesh = new THREE.Mesh(grenadeGeo, grenadeMat);
-  mesh.position.copy(camera.position);
-  scene.add(mesh);
   camera.getWorldDirection(_dir);
-  grenades.push({
-    mesh, kind,
-    vel: new THREE.Vector3(_dir.x * 15, _dir.y * 15 + 3.5, _dir.z * 15),
-    ttl: kind === 'frag' ? 1.6 : 1.3,
-  });
-  syncWeaponHud();
-}
-function stepGrenades(dt) {
-  for (let i = grenades.length - 1; i >= 0; i -= 1) {
-    const g = grenades[i];
-    g.ttl -= dt;
-    g.vel.y -= 14 * dt;
-    g.mesh.position.addScaledVector(g.vel, dt);
-    if (g.mesh.position.y < 0.09) {
-      g.mesh.position.y = 0.09;
-      g.vel.y *= -0.35;
-      g.vel.x *= 0.7;
-      g.vel.z *= 0.7;
-    }
-    if (g.ttl <= 0) {
-      const p = g.mesh.position;
-      if (g.kind === 'frag') {
-        effects.spark(p, 14);
-        audio.explode();
-        for (const a of G.actors) {
-          if (!a.alive || a === player) continue;
-          const d = Math.hypot(a.body.position.x - p.x, a.body.position.z - p.z);
-          if (d < 7) damage(a, Math.max(15, 110 - d * 13), false, player);
-        }
-      } else if (g.kind === 'smoke') {
-        effects.smoke(p);
-      } else if (g.kind === 'flash') {
-        hud.flashScreen();
-        for (const b of bots.bots) {
-          if (!b.alive || b.team === player.team) continue;
-          const d = Math.hypot(b.body.position.x - p.x, b.body.position.z - p.z);
-          if (d < 22) {
-            b.target = null;
-            b.reaction = 1.6;
-          }
-        }
-      }
-      scene.remove(g.mesh);
-      grenades.splice(i, 1);
-    }
-  }
+  const target = new THREE.Vector3().copy(camera.position).addScaledVector(_dir, 20);
+  if (grenadeSys.throwAt(camera.position, target, kind, player)) syncWeaponHud();
 }
 
-// --- rounds wiring ---
 const rounds = createRounds(G, {
   audio,
   radio,
@@ -378,7 +329,6 @@ const rounds = createRounds(G, {
   },
 });
 
-// --- bot context ---
 const botCtx = {
   G,
   colliders: map.colliders,
@@ -387,6 +337,11 @@ const botCtx = {
   damage,
   tracer: (from, to) => effects.tracer(from, to),
   hearing,
+  // grenades: bots throw utility when they execute a site
+  throwGrenade: (bot, kind, target) => {
+    const from = new THREE.Vector3(bot.body.position.x, bot.body.position.y + 1.4, bot.body.position.z);
+    return grenadeSys.throwAt(from, target, kind, bot);
+  },
   radio: (bot, text) => radio(bot.name, text),
 };
 
@@ -401,8 +356,15 @@ function syncWeaponHud() {
 }
 
 function syncCamera() {
-  camera.position.set(player.body.position.x, player.body.position.y + player.body.eye, player.body.position.z);
-  camera.rotation.set(player.body.pitch, player.body.yaw, 0, 'YXZ');
+  // landing dip: the camera drops a little after a hard landing
+  const dip = player.body.landDip * 0.09;
+  camera.position.set(player.body.position.x, player.body.position.y + player.body.eye - dip, player.body.position.z);
+  // lean (Q/E): roll the camera and shift it sideways a touch, so a peek
+  // around a corner reads as a lean, not a strafe
+  const lean = player.body.lean;
+  camera.rotation.set(player.body.pitch, player.body.yaw, -lean * 0.06, 'YXZ');
+  camera.position.x += Math.cos(player.body.yaw) * lean * 0.12;
+  camera.position.z -= Math.sin(player.body.yaw) * lean * 0.12;
 }
 
 function syncHud() {
@@ -498,7 +460,7 @@ function step(dt) {
   }
   // noises decay (hearing.js owns the array)
   hearing.decay(dt);
-  stepGrenades(dt);
+  grenadeSys.step(dt, { G, damage, effects, audio, hud, bots: bots.bots, player });
   effects.step(dt);
   rounds.step(dt);
 }
@@ -508,8 +470,8 @@ let frozen = false;
 let started = false;
 let accumulator = 0;
 let lastTime = performance.now();
-let stepAcc = 0; // distance since the last footstep sound
-let lastLook = { x: 0, y: 0 }; // mouse delta this frame, for weapon sway
+let stepAcc = 0;
+let lastLook = { x: 0, y: 0 };
 
 hud.setVitals(100, 0, false, ECONOMY.start);
 syncWeaponHud();

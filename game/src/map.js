@@ -124,7 +124,6 @@ export function createMap(scene) {
     shootables.push(counter);
   }
 
-  // --- ground, wet and reflective ---
   box(46.4, 0.4, 38.4, 0, -0.2, 0, mat.ground);
   // puddles: glossy dark planes catching the neon
   const puddleMat = new THREE.MeshStandardMaterial({ color: new THREE.Color('#0a0e22'), roughness: 0.06, metalness: 0.7 });
@@ -136,7 +135,6 @@ export function createMap(scene) {
     group.add(p);
   }
 
-  // --- perimeter walls ---
   box(46.4, WALL_H, 0.5, 0, WALL_H / 2, -19.2, mat.wall);
   box(46.4, WALL_H, 0.5, 0, WALL_H / 2, 19.2, mat.wall);
   box(0.5, WALL_H, 38.4, -23.2, WALL_H / 2, 0, mat.wall);
@@ -144,7 +142,6 @@ export function createMap(scene) {
   // plaster band on the north wall, behind the sites
   box(46.4, 1.2, 0.2, 0, 4.2, -18.9, mat.plaster, false);
 
-  // --- the neon gate at mid ---
   box(0.7, 4.6, 0.7, -3.4, 2.3, 2, mat.woodDark);
   box(0.7, 4.6, 0.7, 3.4, 2.3, 2, mat.woodDark);
   box(7.5, 0.9, 0.9, 0, 4.6, 2, mat.woodDark);
@@ -159,7 +156,6 @@ export function createMap(scene) {
   scene.add(gateLight);
   lights.push(gateLight);
 
-  // --- stalls: A-long (west), B-long (east), mid rows ---
   stall(-20, 8, Math.PI / 2, 'red');
   stall(-20, 0, Math.PI / 2, 'teal');
   stall(-20, -6, Math.PI / 2, 'red');
@@ -173,7 +169,6 @@ export function createMap(scene) {
   stall(-4, -15, 0, 'red');
   stall(4, -15, 0, 'teal');
 
-  // --- crates and barrels for cover ---
   for (const [x, z, s] of [[-12, 6, 1.2], [-11, 6, 0.8], [-12.8, 12, 1.2], [12, 6, 1.2], [12.9, 6, 0.8], [12, -6, 1.2], [-6, -4, 1.2], [6, -4, 1.2], [-4, 7, 1.2], [5, 7, 0.8], [0, -10, 1.2]]) {
     box(s, s, s, x, s / 2, z, mat.wood);
   }
@@ -181,13 +176,11 @@ export function createMap(scene) {
     cylinder(0.45, 0.45, 1.1, x, 0.55, z, mat.woodDark);
   }
 
-  // --- site A: Spice Row (west) ---
   sign('SPICE ROW', 5, 1.1, -22.9, 3.6, -8, Math.PI / 2, '#ffd9a0', '#2a1503');
   sign('SITE A', 2.6, 0.9, -17, 3.2, -11.2, 0, '#1a0d02', '#ffb020');
   for (const [x, z] of [[-18, -9], [-16.5, -9.5], [-19, -7], [-15.5, -7.5]]) {
     box(1.1, 0.7, 0.8, x, 0.35, z, neonAmber);
   }
-  // --- site B: Lantern Court (east) ---
   sign('LANTERN COURT', 5.5, 1.1, 22.9, 3.6, -8, -Math.PI / 2, '#bdf3ff', '#04121a');
   sign('SITE B', 2.6, 0.9, 17, 3.2, -11.2, 0, '#04121a', '#22d3ee');
   for (const [x, z, c] of [[18, -9, '#ff2e88'], [16, -9.5, '#22d3ee'], [19, -7, '#ffb020'], [15.5, -7.5, '#ff2e88']]) {
@@ -204,8 +197,8 @@ export function createMap(scene) {
     const d = maxZ - minZ;
     const cx = (minX + maxX) / 2;
     const cz = (minZ + maxZ) / 2;
-    const t = 0.18; // outline thickness
-    const y = 0.03; // just above the floor
+    const t = 0.18;
+    const y = 0.03;
     const strips = [
       [w, t, cx, cz - d / 2], [w, t, cx, cz + d / 2],
       [t, d, cx - w / 2, cz], [t, d, cx + w / 2, cz],
@@ -219,7 +212,6 @@ export function createMap(scene) {
   plantZone(-20.5, -13.5, -11.5, -4.5, '#ffb020'); // site A, amber
   plantZone(13.5, 20.5, -11.5, -4.5, '#22d3ee'); // site B, cyan
 
-  // --- lanterns and string lights ---
   lantern(-10, 6, true);
   lantern(10, 6, true);
   lantern(-10, -6, false);
@@ -238,7 +230,6 @@ export function createMap(scene) {
     group.add(bulb);
   }
 
-  // --- lights: moon + sky (bright enough that no corner is pitch black) ---
   const sky = new THREE.HemisphereLight(new THREE.Color('#3a4a7a'), new THREE.Color('#141828'), 2.4);
   scene.add(sky);
   const ambient = new THREE.AmbientLight(new THREE.Color('#2a3050'), 1.1);
@@ -261,7 +252,6 @@ export function createMap(scene) {
 
   scene.fog = new THREE.Fog(new THREE.Color(PALETTE.sky), 26, 70);
 
-  // --- nav: named waypoints bots follow ---
   const waypoints = {
     atkSpawn: [0, 16], atkA1: [-14, 14], atkA2: [-19, 6], atkA3: [-18, -3], siteA: [-17, -8],
     atkB1: [14, 14], atkB2: [19, 6], atkB3: [18, -3], siteB: [17, -8],
