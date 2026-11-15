@@ -196,6 +196,29 @@ export function createMap(scene) {
   }
   box(3.4, 0.25, 2.2, 17.5, 0.12, -8.5, mat.woodDark);
 
+  // --- marked plant zones: a glowing outline on the ground at each site,
+  // so the carrier (and the judge) can see exactly where to plant. ---
+  function plantZone(minX, maxX, minZ, maxZ, color) {
+    const zoneMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color), transparent: true, opacity: 0.85 });
+    const w = maxX - minX;
+    const d = maxZ - minZ;
+    const cx = (minX + maxX) / 2;
+    const cz = (minZ + maxZ) / 2;
+    const t = 0.18; // outline thickness
+    const y = 0.03; // just above the floor
+    const strips = [
+      [w, t, cx, cz - d / 2], [w, t, cx, cz + d / 2],
+      [t, d, cx - w / 2, cz], [t, d, cx + w / 2, cz],
+    ];
+    for (const [sw, sd, sx, sz] of strips) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(sw, 0.02, sd), zoneMat);
+      m.position.set(sx, y, sz);
+      group.add(m);
+    }
+  }
+  plantZone(-20.5, -13.5, -11.5, -4.5, '#ffb020'); // site A, amber
+  plantZone(13.5, 20.5, -11.5, -4.5, '#22d3ee'); // site B, cyan
+
   // --- lanterns and string lights ---
   lantern(-10, 6, true);
   lantern(10, 6, true);

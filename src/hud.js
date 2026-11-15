@@ -256,7 +256,13 @@ export function createHud(minimapData, callbacks) {
       }[mode];
       if (!copy) return;
       els.overlayTitle.textContent = copy[0];
-      els.overlayCopy.textContent = copy[1];
+      // round end: show the damage scoreboard under the reason, best first
+      let sub = copy[1];
+      if (mode === 'roundEnd' && data?.table && data.table.length) {
+        const lines = data.table.slice(0, 5).map((r) => `${r.name} ${r.dmg} dmg${r.alive ? '' : ' †'}`).join(' · ');
+        sub = `${copy[1]}\nDamage: ${lines}`;
+      }
+      els.overlayCopy.textContent = sub;
       els.play.textContent = copy[2];
       els.overlay.hidden = false;
     },

@@ -14,6 +14,7 @@ import { createEffects } from './effects.js';
 import { createBots } from './bots.js';
 import { createRounds } from './rounds.js';
 import { createHud } from './hud.js';
+import { createHearing } from './hearing.js';
 
 const FIXED_STEP = 1 / 60;
 const params = new URLSearchParams(window.location.search);
@@ -54,6 +55,8 @@ const effects = createEffects(scene, camera);
 const input = createInput(renderer.domElement, onLockChange);
 const mover = createMover(map.colliders);
 const G = createGameState();
+// hearing.js owns the noise system: gunshots, footsteps, plant beeps.
+const hearing = createHearing(G.noises);
 
 // --- the player ---
 const player = {
@@ -127,6 +130,9 @@ function damage(target, amount, isHead, attacker) {
     dmg -= absorbed;
   }
   target.hp -= dmg;
+  // damage scoreboard: track who dealt how much, for the round-end screen
+  if (attacker) attacker.damageDealt = (attacker.damageDealt || 0) + Math.round(dmg);
+  target.damageTaken = (target.damageTaken || 0) + Math.round(dmg);
   if (target.hp <= 0) {
     target.hp = 0;
     target.alive = false;
@@ -357,7 +363,11 @@ const rounds = createRounds(G, {
       hud.showBanner('CHARGE PLANTED', `Site ${data.site} — 40 seconds on the fuse`, 4000);
     } else if (kind === 'roundEnd') {
       hud.showBuy(false);
-      hud.showOverlay('roundEnd', { round: G.round, winner: data.winner === 'attack' ? TEAMS.ATTACK.name : TEAMS.DEFEND.name, reason: data.reason });
+      // damage scoreboard: every actor's damage dealt this match, best first
+      const table = G.actors
+        .map((a) => ({ name: a.isPlayer ? 'YOU' : a.name, team: a.team, dmg: a.damageDealt || 0, alive: a.alive }))
+        .sort((a, b) => b.dmg - a.dmg);
+      hud.showOverlay('roundEnd', { round: G.round, winner: data.winner === 'attack' ? TEAMS.ATTACK.name : TEAMS.DEFEND.name, reason: data.reason, table });
       setTimeout(() => hud.hideOverlay(), 3800);
     } else if (kind === 'matchEnd') {
       const score = `${G.scoreAttack} — ${G.scoreDefend}`;
@@ -376,9 +386,7 @@ const botCtx = {
   time: 0,
   damage,
   tracer: (from, to) => effects.tracer(from, to),
-  noise: (x, z, radius) => {
-    G.noises.push({ x, z, radius, ttl: 0.5 });
-  },
+  hearing,
   radio: (bot, text) => radio(bot.name, text),
 };
 
@@ -423,7 +431,8 @@ function step(dt) {
   botCtx.time = G.time;
   // player movement
   if (player.alive && G.phase !== 'matchEnd') {
-    mover.stepBody(player.body, dt, input.state.keys);
+    const wantAds = input.state.aiming && player.weapon && player.weapon.def.kind !== 'knife';
+    mover.stepBody(player.body, dt, input.state.keys, wantAds);
     // footsteps: a soft thud every couple of metres while moving on the ground
     const spd = mover.groundSpeed(player.body);
     if (spd > 0.5 && player.body.onGround) {
@@ -436,6 +445,16 @@ function step(dt) {
   }
   // player weapon: sway and bob follow the mouse and the feet
   if (player.weapon) {
+    // ADS: right mouse aims down the sights (not for the knife). While
+    // aiming the viewmodel centres, the spread tightens and the FOV
+    // narrows, so a held angle is a real decision, not a free zoom.
+    const wantAds = input.state.aiming && player.weapon.def.kind !== 'knife' && player.alive;
+    player.weapon.setAiming(wantAds);
+    const targetFov = wantAds ? 55 : 74;
+    if (Math.abs(camera.fov - targetFov) > 0.1) {
+      camera.fov += (targetFov - camera.fov) * Math.min(1, dt * 12);
+      camera.updateProjectionMatrix();
+    }
     player.weapon.step(dt, {
       speed: mover.groundSpeed(player.body),
       lookX: lastLook.x,
@@ -470,19 +489,15 @@ function step(dt) {
         d.state = 'defuse';
         radio(d.name, `Defusing at ${sc.site}`);
       } else if (d.state !== 'advance') {
-        const onB = d.body.position.x > 0;
-        if (sc.site === 'A') d.route = onB ? 'rotateBtoA' : 'toA';
-        else d.route = onB ? 'toB' : 'rotateAtoB';
+        // nav.js picks the rotation route from the defender's side
+        d.route = bots.nav.rotationRoute(d.body.position.x, sc.site);
         d.routeIndex = 0;
         d.state = 'advance';
       }
     }
   }
-  // noises decay
-  for (let i = G.noises.length - 1; i >= 0; i -= 1) {
-    G.noises[i].ttl -= dt;
-    if (G.noises[i].ttl <= 0) G.noises.splice(i, 1);
-  }
+  // noises decay (hearing.js owns the array)
+  hearing.decay(dt);
   stepGrenades(dt);
   effects.step(dt);
   rounds.step(dt);
