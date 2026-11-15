@@ -1,12 +1,5 @@
-// Monsoon Market — hearing.js. The sound system bots react to. Anything
-// loud — a gunshot, a footstep, a plant beep, a grenade — emits a noise
-// with a kind, a position and a radius. A bot hears the loudest noise
-// inside its radius and can turn toward it, call it out, or walk over to
-// investigate. Noises live for a short time (a gunshot echoes half a
-// second) and then fade, so a bot only reacts to fresh sound.
-// Radii (metres): a gunshot carries across the market, a plant beep
-// across a site, a running footstep a few metres, a crouched step almost
-// nothing — which is why walking and crouching are quiet.
+// Monsoon Market — hearing.js. The sound world bots react to: a
+// noise is a position + kind + radius + time; bots hear the loudest one.
 export const NOISE_RADIUS = {
   gunshot: 26,
   plant: 20,

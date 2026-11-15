@@ -58,7 +58,6 @@ function cracks(ctx, size, rand, n, color) {
   ctx.globalAlpha = 1;
 }
 
-// --- concrete: warm grey, cracks, oil stains, a faded yellow marking ---
 export function concreteTexture(seed = 11) {
   return canvasTexture(256, (ctx, size, rand) => {
     ctx.fillStyle = '#9a938a';
@@ -86,7 +85,6 @@ export function concreteTexture(seed = 11) {
   }, seed);
 }
 
-// --- brick / plaster wall: rows of brick with mortar, layered noise ---
 export function brickTexture(seed = 23) {
   return canvasTexture(256, (ctx, size, rand) => {
     ctx.fillStyle = '#b99f7d';
@@ -118,7 +116,6 @@ export function brickTexture(seed = 23) {
   }, seed);
 }
 
-// --- wood: planks with grain lines and knots, for crates ---
 export function woodTexture(seed = 37) {
   return canvasTexture(256, (ctx, size, rand) => {
     ctx.fillStyle = '#8a6a45';
@@ -154,7 +151,6 @@ export function woodTexture(seed = 37) {
   }, seed);
 }
 
-// --- container steel: corrugated vertical ribs, faded paint, rust streaks ---
 export function containerTexture(base, seed = 53) {
   return canvasTexture(256, (ctx, size, rand) => {
     ctx.fillStyle = base;
@@ -191,7 +187,6 @@ export function containerTexture(base, seed = 53) {
   }, seed);
 }
 
-// --- sand / ground: fine grain, a few pebbles ---
 export function sandTexture(seed = 71) {
   return canvasTexture(256, (ctx, size, rand) => {
     ctx.fillStyle = '#c9b18c';
@@ -203,7 +198,6 @@ export function sandTexture(seed = 71) {
   }, seed);
 }
 
-// --- plain steel: brushed, for doors and frames ---
 export function steelTexture(seed = 97) {
   return canvasTexture(256, (ctx, size, rand) => {
     ctx.fillStyle = '#5a6068';
@@ -221,7 +215,6 @@ export function steelTexture(seed = 97) {
   }, seed);
 }
 
-// --- soft radial sprite (muzzle flash / dust puff) ---
 export function radialSprite(inner, outer) {
   const c = document.createElement('canvas');
   c.width = 128;
@@ -238,7 +231,6 @@ export function radialSprite(inner, outer) {
   return tex;
 }
 
-// --- bookshelf front: rows of coloured book spines ---
 export function booksTexture() {
   const c = document.createElement('canvas');
   c.width = 256;
@@ -267,7 +259,7 @@ export function booksTexture() {
       ctx.fillStyle = 'rgba(255,255,255,0.18)';
       ctx.fillRect(x + w - 3, y0 + 54 - h, 2, h);
       x += w + 1 + rng() * 3;
-      if (rng() < 0.12) x += 10; // occasional gap / leaning book
+      if (rng() < 0.12) x += 10;
     }
   }
   const tex = new THREE.CanvasTexture(c);
@@ -275,7 +267,6 @@ export function booksTexture() {
   return tex;
 }
 
-// --- checkerboard floor (lobby) ---
 export function checkerTexture() {
   const c = document.createElement('canvas');
   c.width = 256;

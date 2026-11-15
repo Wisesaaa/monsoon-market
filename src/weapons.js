@@ -24,7 +24,7 @@ export function createWeaponInstance(camera, weaponId) {
     // reload: the viewmodel dips while the timer runs; ammo moves at the end
     if (state.reloadLeft > 0) {
       state.reloadLeft = Math.max(0, state.reloadLeft - dt);
-      const t = 1 - state.reloadLeft / def.reload; // 0..1 through the reload
+      const t = 1 - state.reloadLeft / def.reload;
       vm.setReload(Math.sin(t * Math.PI));
       if (state.reloadLeft === 0 && def.mag !== Infinity) {
         const need = def.mag - state.mag;
@@ -49,7 +49,7 @@ export function createWeaponInstance(camera, weaponId) {
     step,
     attach(cam) {
       vm.attach(cam);
-      state.switchT = 0.3; // raise-in animation on equip
+      state.switchT = 0.3;
     },
     detach(cam) {
       vm.detach(cam);

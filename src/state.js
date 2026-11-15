@@ -60,10 +60,10 @@ export const ECONOMY = {
 };
 
 export const ROUND = {
-  freeze: 8, // seconds of buy phase
-  live: 100, // round timer
-  fuse: 40, // stormcell fuse after plant
-  plantTime: 3, // seconds holding E to plant
+  freeze: 8,
+  live: 100,
+  fuse: 40,
+  plantTime: 3,
   defuseTime: 5,
   defuseKitTime: 2.5,
   maxRounds: 12,
@@ -95,23 +95,23 @@ export function createGameState() {
     scoreDefend: 0,
     timer: ROUND.freeze,
     time: 0,
-    winner: null, // 'attack' | 'defend' | null
+    winner: null,
     matchWinner: null,
     stormcell: {
-      carrierId: null, // actor id carrying it
+      carrierId: null,
       planted: false,
-      site: null, // 'A' | 'B'
+      site: null,
       fuse: 0,
       plantProgress: 0,
       defuseProgress: 0,
       defuserId: null,
     },
-    actors: [], // player + bots, in team order
+    actors: [],
     playerId: 'you',
-    plan: null, // { text, site, role } shown in the top bar
-    feed: [], // kill feed entries { text, kind }
-    radio: [], // radio/chat lines { who, text, mine }
-    noises: [], // { x, z, radius, ttl } gunshots bots can hear
+    plan: null,
+    feed: [],
+    radio: [],
+    noises: [],
     roundLog: [],
   };
 }

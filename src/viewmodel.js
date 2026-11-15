@@ -1,11 +1,5 @@
-// Monsoon Market — viewmodel.js. The first-person gun: the model you see
-// in your hands, built from many shapes so its silhouette reads as a real
-// weapon (a long barrel, a handguard, a curved magazine, a stock, and two
-// gloved hands holding it — no single box), and the animation that makes
-// it feel alive: walk sway and bob, recoil that kicks up and settles, a
-// reload dip with a magazine swap, a lower/raise on weapon switch, and
-// aim-down-sights (ADS) on right click. weapons.js owns the numbers and
-// the firing; this file owns the look and the feel.
+// Monsoon Market — viewmodel.js. The first-person gun: the model you
+// see, its sway/bob/recoil/reload/switch animation, muzzle flash and ADS.
 import * as THREE from 'three';
 import { radialSprite } from './textures.js';
 
@@ -42,109 +36,109 @@ function buildRifle() {
   // vertical foregrip, curved tan mag, collapsible tan stock, birdcage
   // flash hider. Built pointing -z; the muzzle is at z = -0.72.
   const g = new THREE.Group();
-  g.add(box(0.09, 0.11, 0.42, STEEL_DARK)); // receiver
-  g.add(box(0.095, 0.04, 0.12, STEEL, 0.0, 0.02, -0.02)); // ejection port (right side)
-  g.add(box(0.02, 0.02, 0.05, STEEL, 0.055, 0.0, 0.06)); // fire selector
-  g.add(box(0.06, 0.02, 0.02, STEEL, 0, 0.06, 0.2)); // charging handle (T)
-  g.add(cyl(0.02, 0.52, STEEL, 0, 0.02, -0.44)); // long barrel
-  g.add(cyl(0.026, 0.07, STEEL_DARK, 0, 0.02, -0.7)); // birdcage flash hider
-  g.add(box(0.056, 0.02, 0.05, STEEL, 0, 0.02, -0.7)); // flash hider slots
-  g.add(box(0.085, 0.1, 0.34, STEEL_DARK, 0, -0.01, -0.34)); // M-LOK handguard
+  g.add(box(0.09, 0.11, 0.42, STEEL_DARK));
+  g.add(box(0.095, 0.04, 0.12, STEEL, 0.0, 0.02, -0.02));
+  g.add(box(0.02, 0.02, 0.05, STEEL, 0.055, 0.0, 0.06));
+  g.add(box(0.06, 0.02, 0.02, STEEL, 0, 0.06, 0.2));
+  g.add(cyl(0.02, 0.52, STEEL, 0, 0.02, -0.44));
+  g.add(cyl(0.026, 0.07, STEEL_DARK, 0, 0.02, -0.7));
+  g.add(box(0.056, 0.02, 0.05, STEEL, 0, 0.02, -0.7));
+  g.add(box(0.085, 0.1, 0.34, STEEL_DARK, 0, -0.01, -0.34));
   for (let i = 0; i < 4; i += 1) {
     g.add(box(0.005, 0.02, 0.06, STEEL, 0.044, -0.01, -0.46 + i * 0.08));
     g.add(box(0.005, 0.02, 0.06, STEEL, -0.044, -0.01, -0.46 + i * 0.08));
   }
-  g.add(box(0.04, 0.015, 0.56, STEEL_DARK, 0, 0.062, -0.2)); // top rail
+  g.add(box(0.04, 0.015, 0.56, STEEL_DARK, 0, 0.062, -0.2));
   for (let i = 0; i < 7; i += 1) {
     g.add(box(0.045, 0.018, 0.012, STEEL, 0, 0.062, -0.44 + i * 0.07));
   }
-  g.add(box(0.06, 0.07, 0.09, STEEL_DARK, 0, 0.11, 0.0)); // holographic red-dot housing
-  g.add(box(0.05, 0.05, 0.01, STEEL, 0, 0.11, -0.05)); // lens hood (front)
+  g.add(box(0.06, 0.07, 0.09, STEEL_DARK, 0, 0.11, 0.0));
+  g.add(box(0.05, 0.05, 0.01, STEEL, 0, 0.11, -0.05));
   const lens = new THREE.Mesh(new THREE.CircleGeometry(0.02, 16),
     new THREE.MeshBasicMaterial({ color: new THREE.Color('#ff2e1e') }));
   lens.position.set(0, 0.11, -0.056);
   lens.rotation.y = Math.PI;
   g.add(lens);
-  g.add(box(0.03, 0.02, 0.03, STEEL, 0, 0.15, 0.0)); // sight top knob
-  g.add(box(0.045, 0.11, 0.05, TAN, 0, -0.11, -0.38, 0.08)); // vertical foregrip
-  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.09, -0.38, 0.08)); // rib 1
-  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.12, -0.38, 0.08)); // rib 2
-  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.15, -0.38, 0.08)); // rib 3
-  g.add(box(0.05, 0.13, 0.07, TAN, 0, -0.11, -0.04, 0.12)); // curved mag, seg 1
-  g.add(box(0.05, 0.12, 0.07, TAN, 0, -0.2, -0.09, 0.32)); // seg 2
-  g.add(box(0.05, 0.1, 0.06, TAN, 0, -0.27, -0.15, 0.55)); // seg 3
-  g.add(box(0.055, 0.02, 0.075, TAN_DARK, 0, -0.31, -0.18, 0.55)); // mag baseplate
-  g.add(box(0.07, 0.08, 0.2, TAN, 0, 0.0, 0.3)); // collapsible stock
-  g.add(box(0.07, 0.03, 0.22, TAN_DARK, 0, 0.045, 0.3)); // cheek riser
-  g.add(box(0.075, 0.12, 0.03, TAN_DARK, 0, -0.01, 0.41)); // butt plate
-  g.add(box(0.02, 0.05, 0.02, STEEL_DARK, 0, -0.08, 0.4)); // sling loop
-  g.add(box(0.05, 0.02, 0.1, STEEL_DARK, 0, -0.05, 0.26)); // buffer tube
-  g.add(box(0.06, 0.13, 0.07, TAN, 0, -0.11, 0.12, 0.35)); // pistol grip
-  g.add(box(0.065, 0.03, 0.075, TAN_DARK, 0, -0.06, 0.12, 0.35)); // beavertail
-  g.add(box(0.015, 0.04, 0.015, STEEL, 0, -0.07, 0.02)); // trigger
-  g.add(box(0.015, 0.02, 0.1, STEEL_DARK, 0, -0.09, 0.02)); // trigger guard
-  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.08, -0.66)); // front sight post
-  g.add(box(0.05, 0.02, 0.06, STEEL, 0, 0.07, 0.16)); // rear sight
-  g.add(box(0.1, 0.1, 0.13, GLOVE, 0, -0.11, 0.12, 0.35)); // rear hand on grip
-  g.add(box(0.09, 0.1, 0.1, GLOVE, 0, -0.12, -0.38, 0.08)); // front hand on foregrip
+  g.add(box(0.03, 0.02, 0.03, STEEL, 0, 0.15, 0.0));
+  g.add(box(0.045, 0.11, 0.05, TAN, 0, -0.11, -0.38, 0.08));
+  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.09, -0.38, 0.08));
+  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.12, -0.38, 0.08));
+  g.add(box(0.05, 0.012, 0.055, TAN_DARK, 0, -0.15, -0.38, 0.08));
+  g.add(box(0.05, 0.13, 0.07, TAN, 0, -0.11, -0.04, 0.12));
+  g.add(box(0.05, 0.12, 0.07, TAN, 0, -0.2, -0.09, 0.32));
+  g.add(box(0.05, 0.1, 0.06, TAN, 0, -0.27, -0.15, 0.55));
+  g.add(box(0.055, 0.02, 0.075, TAN_DARK, 0, -0.31, -0.18, 0.55));
+  g.add(box(0.07, 0.08, 0.2, TAN, 0, 0.0, 0.3));
+  g.add(box(0.07, 0.03, 0.22, TAN_DARK, 0, 0.045, 0.3));
+  g.add(box(0.075, 0.12, 0.03, TAN_DARK, 0, -0.01, 0.41));
+  g.add(box(0.02, 0.05, 0.02, STEEL_DARK, 0, -0.08, 0.4));
+  g.add(box(0.05, 0.02, 0.1, STEEL_DARK, 0, -0.05, 0.26));
+  g.add(box(0.06, 0.13, 0.07, TAN, 0, -0.11, 0.12, 0.35));
+  g.add(box(0.065, 0.03, 0.075, TAN_DARK, 0, -0.06, 0.12, 0.35));
+  g.add(box(0.015, 0.04, 0.015, STEEL, 0, -0.07, 0.02));
+  g.add(box(0.015, 0.02, 0.1, STEEL_DARK, 0, -0.09, 0.02));
+  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.08, -0.66));
+  g.add(box(0.05, 0.02, 0.06, STEEL, 0, 0.07, 0.16));
+  g.add(box(0.1, 0.1, 0.13, GLOVE, 0, -0.11, 0.12, 0.35));
+  g.add(box(0.09, 0.1, 0.1, GLOVE, 0, -0.12, -0.38, 0.08));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.72) };
 }
 
 function buildSmg() {
   const g = new THREE.Group();
-  g.add(box(0.08, 0.09, 0.34, STEEL_DARK)); // receiver
-  g.add(cyl(0.018, 0.3, STEEL, 0, 0.015, -0.3)); // short barrel
-  g.add(box(0.07, 0.07, 0.2, POLYMER, 0, -0.01, -0.2)); // handguard
-  g.add(box(0.045, 0.2, 0.06, STEEL, 0, -0.14, -0.02)); // straight magazine
-  g.add(box(0.06, 0.07, 0.16, POLYMER, 0, -0.01, 0.24, -0.1)); // folding stock
-  g.add(box(0.055, 0.11, 0.06, POLYMER, 0, -0.1, 0.1, 0.3)); // grip
-  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.06, -0.44)); // front sight
-  g.add(box(0.04, 0.02, 0.05, STEEL, 0, 0.055, 0.1)); // rear sight
-  g.add(box(0.05, 0.09, 0.06, POLYMER, 0, -0.1, -0.2, 0.15)); // front vertical grip
-  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.1, 0.1, 0.3)); // rear hand
-  g.add(box(0.09, 0.08, 0.12, GLOVE, 0, -0.1, -0.2, 0.15)); // front hand
+  g.add(box(0.08, 0.09, 0.34, STEEL_DARK));
+  g.add(cyl(0.018, 0.3, STEEL, 0, 0.015, -0.3));
+  g.add(box(0.07, 0.07, 0.2, POLYMER, 0, -0.01, -0.2));
+  g.add(box(0.045, 0.2, 0.06, STEEL, 0, -0.14, -0.02));
+  g.add(box(0.06, 0.07, 0.16, POLYMER, 0, -0.01, 0.24, -0.1));
+  g.add(box(0.055, 0.11, 0.06, POLYMER, 0, -0.1, 0.1, 0.3));
+  g.add(box(0.02, 0.04, 0.02, STEEL, 0, 0.06, -0.44));
+  g.add(box(0.04, 0.02, 0.05, STEEL, 0, 0.055, 0.1));
+  g.add(box(0.05, 0.09, 0.06, POLYMER, 0, -0.1, -0.2, 0.15));
+  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.1, 0.1, 0.3));
+  g.add(box(0.09, 0.08, 0.12, GLOVE, 0, -0.1, -0.2, 0.15));
   return { group: g, muzzle: new THREE.Vector3(0, 0.015, -0.46) };
 }
 
 function buildPistol() {
   const g = new THREE.Group();
-  g.add(box(0.06, 0.07, 0.24, STEEL_DARK, 0, 0.01, -0.05)); // slide
-  g.add(box(0.055, 0.05, 0.22, STEEL, 0, -0.03, -0.04)); // frame
-  g.add(box(0.055, 0.14, 0.07, POLYMER, 0, -0.1, 0.06, 0.25)); // grip
-  g.add(box(0.015, 0.03, 0.015, STEEL, 0, 0.055, -0.16)); // front sight
-  g.add(box(0.04, 0.02, 0.03, STEEL, 0, 0.05, 0.05)); // rear sight
-  g.add(cyl(0.016, 0.1, STEEL, 0, 0.01, -0.19)); // barrel tip
-  g.add(box(0.09, 0.1, 0.12, GLOVE, 0, -0.1, 0.06, 0.25)); // main hand
-  g.add(box(0.08, 0.08, 0.1, GLOVE, 0.02, -0.09, -0.02, 0.2)); // support hand
+  g.add(box(0.06, 0.07, 0.24, STEEL_DARK, 0, 0.01, -0.05));
+  g.add(box(0.055, 0.05, 0.22, STEEL, 0, -0.03, -0.04));
+  g.add(box(0.055, 0.14, 0.07, POLYMER, 0, -0.1, 0.06, 0.25));
+  g.add(box(0.015, 0.03, 0.015, STEEL, 0, 0.055, -0.16));
+  g.add(box(0.04, 0.02, 0.03, STEEL, 0, 0.05, 0.05));
+  g.add(cyl(0.016, 0.1, STEEL, 0, 0.01, -0.19));
+  g.add(box(0.09, 0.1, 0.12, GLOVE, 0, -0.1, 0.06, 0.25));
+  g.add(box(0.08, 0.08, 0.1, GLOVE, 0.02, -0.09, -0.02, 0.2));
   return { group: g, muzzle: new THREE.Vector3(0, 0.01, -0.24) };
 }
 
 function buildDmr() {
   const g = new THREE.Group();
-  g.add(box(0.08, 0.1, 0.48, STEEL_DARK)); // receiver
-  g.add(cyl(0.018, 0.62, STEEL, 0, 0.02, -0.5)); // long barrel
-  g.add(cyl(0.03, 0.2, STEEL_DARK, 0, 0.09, -0.08)); // scope tube
-  g.add(cyl(0.038, 0.04, STEEL_DARK, 0, 0.09, -0.18)); // scope bell
-  g.add(box(0.07, 0.08, 0.26, WOOD, 0, -0.015, -0.3)); // handguard
-  g.add(box(0.045, 0.1, 0.06, STEEL, 0, -0.11, -0.02, 0.1)); // straight mag
-  g.add(box(0.07, 0.09, 0.26, WOOD, 0, -0.02, 0.32, -0.05)); // stock
-  g.add(box(0.055, 0.12, 0.06, POLYMER, 0, -0.11, 0.11, 0.3)); // grip
-  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3)); // rear hand
-  g.add(box(0.09, 0.08, 0.13, GLOVE, 0, -0.07, -0.3)); // front hand
+  g.add(box(0.08, 0.1, 0.48, STEEL_DARK));
+  g.add(cyl(0.018, 0.62, STEEL, 0, 0.02, -0.5));
+  g.add(cyl(0.03, 0.2, STEEL_DARK, 0, 0.09, -0.08));
+  g.add(cyl(0.038, 0.04, STEEL_DARK, 0, 0.09, -0.18));
+  g.add(box(0.07, 0.08, 0.26, WOOD, 0, -0.015, -0.3));
+  g.add(box(0.045, 0.1, 0.06, STEEL, 0, -0.11, -0.02, 0.1));
+  g.add(box(0.07, 0.09, 0.26, WOOD, 0, -0.02, 0.32, -0.05));
+  g.add(box(0.055, 0.12, 0.06, POLYMER, 0, -0.11, 0.11, 0.3));
+  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3));
+  g.add(box(0.09, 0.08, 0.13, GLOVE, 0, -0.07, -0.3));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.82) };
 }
 
 function buildShotgun() {
   const g = new THREE.Group();
-  g.add(box(0.1, 0.11, 0.4, STEEL_DARK)); // receiver
-  g.add(cyl(0.03, 0.5, STEEL, 0, 0.02, -0.42)); // thick barrel
-  g.add(cyl(0.022, 0.46, STEEL_DARK, 0, -0.03, -0.4)); // magazine tube
-  g.add(box(0.09, 0.08, 0.2, WOOD, 0, -0.07, -0.32)); // pump
-  g.add(box(0.08, 0.1, 0.24, WOOD, 0, -0.02, 0.3, -0.06)); // stock
-  g.add(box(0.06, 0.12, 0.07, POLYMER, 0, -0.11, 0.11, 0.3)); // grip
-  g.add(box(0.02, 0.05, 0.02, STEEL, 0, 0.08, -0.64)); // front bead
-  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3)); // rear hand
-  g.add(box(0.1, 0.09, 0.14, GLOVE, 0, -0.08, -0.32)); // front hand on pump
+  g.add(box(0.1, 0.11, 0.4, STEEL_DARK));
+  g.add(cyl(0.03, 0.5, STEEL, 0, 0.02, -0.42));
+  g.add(cyl(0.022, 0.46, STEEL_DARK, 0, -0.03, -0.4));
+  g.add(box(0.09, 0.08, 0.2, WOOD, 0, -0.07, -0.32));
+  g.add(box(0.08, 0.1, 0.24, WOOD, 0, -0.02, 0.3, -0.06));
+  g.add(box(0.06, 0.12, 0.07, POLYMER, 0, -0.11, 0.11, 0.3));
+  g.add(box(0.02, 0.05, 0.02, STEEL, 0, 0.08, -0.64));
+  g.add(box(0.09, 0.09, 0.12, GLOVE, 0, -0.11, 0.11, 0.3));
+  g.add(box(0.1, 0.09, 0.14, GLOVE, 0, -0.08, -0.32));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.68) };
 }
 
@@ -152,8 +146,8 @@ function buildKnife() {
   const g = new THREE.Group();
   const blade = box(0.015, 0.09, 0.3, new THREE.MeshStandardMaterial({ color: new THREE.Color('#b9bec6'), roughness: 0.25, metalness: 0.9 }), 0, 0.02, -0.2, -0.5);
   g.add(blade);
-  g.add(box(0.04, 0.06, 0.14, POLYMER, 0, -0.02, 0.02, -0.5)); // handle
-  g.add(box(0.09, 0.1, 0.13, GLOVE, 0, -0.02, 0.02, -0.5)); // hand
+  g.add(box(0.04, 0.06, 0.14, POLYMER, 0, -0.02, 0.02, -0.5));
+  g.add(box(0.09, 0.1, 0.13, GLOVE, 0, -0.02, 0.02, -0.5));
   return { group: g, muzzle: new THREE.Vector3(0, 0.02, -0.35) };
 }
 
@@ -167,7 +161,7 @@ const BUILDERS = {
 };
 
 const BASE_POS = new THREE.Vector3(0.28, -0.25, -0.45);
-const ADS_POS = new THREE.Vector3(0, -0.14, -0.35); // centred on the sight
+const ADS_POS = new THREE.Vector3(0, -0.14, -0.35);
 const BASE_ROT_Y = 0.1;
 
 // A viewmodel: the gun model + its animation state. `step(dt, move)`
@@ -198,10 +192,10 @@ export function createViewmodel(kind) {
   const state = {
     flash: 0, kick: 0,
     swayX: 0, swayY: 0, bobPhase: 0,
-    aiming: 0, // 0 = hip, 1 = ADS
-    adsTarget: 0, // where aiming is heading (1 while right mouse is held)
-    reloadT: 0, reloadDur: 1, // 0..1 progress through a reload, while reloading
-    switchT: 0, // seconds left of the raise-in animation
+    aiming: 0,
+    adsTarget: 0,
+    reloadT: 0, reloadDur: 1,
+    switchT: 0,
   };
 
   function step(dt, move) {
@@ -284,14 +278,14 @@ export function createViewmodel(kind) {
       return 1 - state.aiming * 0.55;
     },
     setReload(progress) {
-      state.reloadT = progress; // 0 = not reloading, 0..1 through the reload
+      state.reloadT = progress;
     },
     setSwitching(seconds) {
       state.switchT = seconds;
     },
     attach(cam) {
       cam.add(model);
-      state.switchT = 0.3; // raise-in animation on equip
+      state.switchT = 0.3;
     },
     detach(cam) {
       cam.remove(model);
