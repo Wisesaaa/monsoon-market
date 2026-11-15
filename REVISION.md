@@ -99,7 +99,45 @@ belakang). Viewmodel rifle dibangun ulang dari gambar itu:
 - Hasil tes: 4 screenshot staged nol error; dossier 143.637 byte
   (< 163.840 cap).
 
-### Yang masih kurang (iterasi 3)
+## Iterasi 4 — Map jadi LIBRARY (15 Nov ~21:06–21:20 WIB)
+Yiro: "Ganti map nya bisa ga? Gw mau map nya tuh begini nih perpustakaan
+gitu kaya point blank." Layout dari gambar referensinya (denah 2D +
+render 3D isometrik):
+- **Main Reading Hall** (utara, CT spawn): rak buku tinggi di dinding
+  utara + meja baca + karpet + papan nama.
+- **Entrance Lobby** (selatan, T spawn): lantai catur, bangku, tanaman,
+  pintu ganda besar, papan nama.
+- **Site A — Study Room** (barat): barisan meja belajar kayu + karpet
+  bundar + rak buku.
+- **Site B — Archive Room** (timur): barisan rak buku tinggi (arsip) +
+  karpet bundar + meja.
+- **Mid**: air mancur (kolam + kolom + mangkuk) + tanaman + blok rak
+  buku di utara/selatan mid.
+- **Long A Corridor** (tepi barat, sempit): rak buku menempel dinding.
+- **B Tunnels** (tepi timur): koridor beratap rendah (terasa seperti
+  terowongan).
+- **Connecting Hallway**: koridor horizontal A ↔ Mid ↔ B.
+- Interior: plafon kayu + balok, jendela menyala hangat (utara/selatan),
+  lampu gantung (5 point light hangat), rak buku dengan tekstur buku
+  prosedural (punggung buku warna-warni), meja baca + kursi + tumpukan
+  buku, tanaman pot, bangku lobby, karpet bundar merah/emas.
+- Waypoint/rute bot, spawn, site, areaAt, minimap, dan staging
+  screenshot diperbarui ke layout library. Nama area di HUD: MAIN
+  READING HALL / ENTRANCE LOBBY / STUDY ROOM / ARCHIVE ROOM / MID /
+  LONG A CORRIDOR / B TUNNELS / CONNECTING HALLWAY.
+- Bug yang diperbaiki saat build: THREE tidak ter-import di map.js,
+  mulberry32 → seeded, format sites/minimap dikembalikan ke format
+  lama (objek keyed + blocks rect) yang dipakai rounds/hud/main.
+- Hasil tes: 4 screenshot staged nol error; dossier 148.162 byte
+  (< 163.840 cap).
+
+### Yang masih kurang (iterasi 4)
+- Interior masih terang merata — belum ada kontras gelap/terang antar
+  ruangan seperti render referensi (ruangan B lebih gelap, lorong
+  lebih redup).
+- Air mancur statis (tidak ada animasi air).
+- 60 FPS + pointer lock tetap belum terverifikasi di Chrome desktop
+  beneran (map indoor + 5 point light lebih berat dari container yard).
 - Detail halus referensi (ukiran, baut, wear, tekstur) tidak bisa
   direproduksi dari geometri — siluet + warna + bagian khasnya yang
   ditiru.
